@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+
+{% block title %}Incoming Requests — RepairNow{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <div class="breadcrumbs">
+      <a href="{% url 'technician_dashboard' %}">Dashboard</a>
+      <span class="separator">/</span>
+      <span class="current">Requests</span>
+    </div>
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+      <h2>Customer Repair Requests</h2>
+
+      <form method="get" style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+        <select name="urgency" class="form-select" style="width: auto;">
+          <option value="">All Urgencies</option>
+          <option value="EMERGENCY" {% if selected_urgency == 'EMERGENCY' %}selected{% endif %}>Emergency</option>
+          <option value="HIGH" {% if selected_urgency == 'HIGH' %}selected{% endif %}>High</option>
+          <option value="MEDIUM" {% if selected_urgency == 'MEDIUM' %}selected{% endif %}>Medium</option>
+          <option value="LOW" {% if selected_urgency == 'LOW' %}selected{% endif %}>Low</option>
+        </select>
+
+        <select name="service" class="form-select" style="width: auto;">
+          <option value="">All Services</option>
+          {% for cat in categories %}
+            <option value="{{ cat.id }}" {% if selected_service == cat.id|stringformat:"s" %}selected{% endif %}>{{ cat.name }}</option>
+          {% endfor %}
+        </select>
+
+        <button type="submit" class="btn btn-secondary btn-sm">Filter</button>
+        {% if selected_urgency or selected_service %}
+          <a href="{% url 'technician_requests' %}" class="btn btn-sm" style="color: var(--danger);">Reset</a>
+        {% endif %}
+      </form>
+    </div>
+    <p style="margin: 0;">Requests where customers have chosen you as their preferred repair technician.</p>
+  </div>
+
+  {% if requests %}
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 1.5rem;">
+      {% for req in requests %}
+        <div class="card" style="display: flex; flex-direction: column; justify-content: space-between;">
+          <div>
+            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.75rem;">
+              <div>
+                <span class="badge badge-urgency-{{ req.urgency|lower }}" style="margin-bottom: 0.35rem;">{{ req.get_urgency_display }}</span>
+                <h3>{{ req.service_category.name }}</h3>
+                <div style="font-weight: 600; color: var(--gray-800); font-size: 0.95rem;">{{ req.device_name }}</div>
+              </div>
+              <span class="badge badge-{{ req.status|lower }}">{{ req.get_status_display }}</span>
+            </div>
+
+            <div style="background: var(--gray-50); border-radius: var(--radius-sm); padding: 0.75rem; margin: 0.75rem 0; font-size: 0.9rem; color: var(--gray-700);">
+              <strong>Problem:</strong> {{ req.problem_description|truncatewords:15 }}
+            </div>
+
+            <div style="font-size: 0.88rem; color: var(--gray-600); margin-bottom: 1.25rem;">
+              <div style="margin-bottom: 0.35rem;">
+                <i class="fa-solid fa-location-dot" style="color: var(--primary);"></i> <strong>Customer Location:</strong> {{ req.location }}, {{ req.city }}
+              </div>
+              <div style="margin-bottom: 0.35rem;">
+                <i class="fa-regular fa-clock"></i> <strong>Preferred:</strong> {{ req.preferred_date|date:"M d" }}, {{ req.preferred_time }}
+              </div>
+              <div>
+                <i class="fa-solid fa-wallet"></i> <strong>Budget:</strong> {% if req.budget %}₹{{ req.budget }}{% else %}Open / Standard{% endif %}
+              </div>
+            </div>
+          </div>
+
+          <div style="border-top: 1px solid var(--gray-200); padding-top: 1rem;">
+            {% if req.status == 'TECHNICIAN_SELECTED' %}
+              <div style="display: flex; gap: 0.5rem;">
+                <a href="{% url 'technician_request_detail' req.id %}" class="btn btn-secondary btn-sm" style="flex: 1;">View Details</a>
+                <a href="{% url 'technician_accept_request' req.id %}" class="btn btn-success btn-sm" style="flex: 1;">
+                  <i class="fa-solid fa-check"></i> Accept
+                </a>
+                <a href="{% url 'technician_reject_request' req.id %}" class="btn btn-danger btn-sm" onclick="return confirm('Reject this request?');">
+                  <i class="fa-solid fa-xmark"></i> Reject
+                </a>
+              </div>
+            {% else %}
+              <a href="{% url 'technician_request_detail' req.id %}" class="btn btn-secondary btn-sm btn-block">View Request</a>
+            {% endif %}
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="card" style="text-align: center; padding: 3rem;">
+      <i class="fa-solid fa-inbox" style="font-size: 2.5rem; color: var(--gray-400); margin-bottom: 1rem;"></i>
+      <h3>No Requests Found</h3>
+      <p>No customer repair requests match the selected filters at the moment.</p>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

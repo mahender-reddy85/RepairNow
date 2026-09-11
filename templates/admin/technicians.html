@@ -1,0 +1,110 @@
+{% extends 'base.html' %}
+
+{% block title %}Manage Technicians — Admin Portal{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <div class="breadcrumbs">
+      <a href="{% url 'admin_dashboard' %}">Dashboard</a>
+      <span class="separator">/</span>
+      <span class="current">Technicians</span>
+    </div>
+    <h2>Technician Directory &amp; Moderation</h2>
+    <p style="margin: 0;">Review verification status, credentials, and manage service suspension.</p>
+  </div>
+
+  <div class="card" style="margin-bottom: 1.5rem; padding: 1rem 1.5rem;">
+    <form method="get" style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: center;">
+      <input type="text" name="q" value="{{ query }}" placeholder="Search technician name, area or city..." class="form-control" style="width: 280px;">
+
+      <select name="status" class="form-select" style="width: auto;">
+        <option value="">All Verification Statuses</option>
+        <option value="VERIFIED" {% if status_filter == 'VERIFIED' %}selected{% endif %}>Verified</option>
+        <option value="PENDING" {% if status_filter == 'PENDING' %}selected{% endif %}>Pending</option>
+        <option value="REJECTED" {% if status_filter == 'REJECTED' %}selected{% endif %}>Rejected</option>
+        <option value="SUSPENDED" {% if status_filter == 'SUSPENDED' %}selected{% endif %}>Suspended</option>
+      </select>
+
+      <button type="submit" class="btn btn-primary btn-sm">Filter</button>
+      {% if query or status_filter %}
+        <a href="{% url 'admin_technicians' %}" class="btn btn-secondary btn-sm">Reset</a>
+      {% endif %}
+    </form>
+  </div>
+
+  <div class="card">
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Technician</th>
+            <th>Phone</th>
+            <th>City / Area</th>
+            <th>Exp</th>
+            <th>Skills</th>
+            <th>Rating</th>
+            <th>Status</th>
+            <th>Verification Document</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for t in technicians %}
+            <tr>
+              <td>
+                <strong>{{ t.full_name }}</strong>
+                <div style="font-size: 0.8rem; color: var(--gray-500);">@{{ t.user.username }}</div>
+              </td>
+              <td>{{ t.phone }}</td>
+              <td>{{ t.city }} ({{ t.service_area|truncatechars:20 }})</td>
+              <td>{{ t.experience }} yrs</td>
+              <td>
+                {% for s in t.skills.all %}
+                  <span class="skill-pill" style="font-size: 0.7rem;">{{ s.service_category.name }}</span>
+                {% endfor %}
+              </td>
+              <td>
+                <span class="star-rating"><i class="fa-solid fa-star"></i> {{ t.average_rating|floatformat:1 }}</span>
+              </td>
+              <td>
+                <span class="badge badge-{{ t.verification_status|lower }}">
+                  {{ t.get_verification_status_display }}
+                </span>
+              </td>
+              <td>
+                {% if t.verification_document %}
+                  <a href="{{ t.verification_document.url }}" target="_blank" class="btn btn-secondary btn-sm" style="font-size: 0.75rem;">
+                    <i class="fa-solid fa-file"></i> View Proof
+                  </a>
+                {% else %}
+                  <span style="color: var(--gray-400); font-size: 0.8rem;">No Doc</span>
+                {% endif %}
+              </td>
+              <td>
+                <div style="display: flex; gap: 0.35rem;">
+                  {% if t.verification_status != 'VERIFIED' %}
+                    <a href="{% url 'admin_verify_technician' t.id 'approve' %}" class="btn btn-success btn-sm" title="Approve Verification">
+                      <i class="fa-solid fa-check"></i>
+                    </a>
+                  {% endif %}
+                  {% if t.verification_status != 'REJECTED' and t.verification_status != 'SUSPENDED' %}
+                    <a href="{% url 'admin_verify_technician' t.id 'reject' %}" class="btn btn-danger btn-sm" title="Reject / Revoke" onclick="return confirm('Reject verification for {{ t.full_name }}?');">
+                      <i class="fa-solid fa-xmark"></i>
+                    </a>
+                  {% endif %}
+                  {% if t.verification_status != 'SUSPENDED' %}
+                    <a href="{% url 'admin_verify_technician' t.id 'suspend' %}" class="btn btn-warning btn-sm" title="Suspend" onclick="return confirm('Suspend {{ t.full_name }}?');">
+                      <i class="fa-solid fa-ban"></i>
+                    </a>
+                  {% endif %}
+                </div>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

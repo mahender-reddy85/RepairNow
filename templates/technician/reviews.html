@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+
+{% block title %}Ratings &amp; Reviews — RepairNow{% endblock %}
+
+{% block content %}
+<div class="container container-narrow">
+  <div class="page-header">
+    <div class="breadcrumbs">
+      <a href="{% url 'technician_dashboard' %}">Dashboard</a>
+      <span class="separator">/</span>
+      <span class="current">Reviews</span>
+    </div>
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+      <h2>Customer Ratings &amp; Reviews</h2>
+      <div class="card" style="padding: 0.5rem 1rem; text-align: center;">
+        <div style="font-size: 1.5rem; font-weight: 800; color: #f59e0b;">
+          <i class="fa-solid fa-star"></i> {{ profile.average_rating|floatformat:1 }}
+        </div>
+        <div style="font-size: 0.8rem; color: var(--gray-500);">{{ profile.total_reviews_count }} Verified Reviews</div>
+      </div>
+    </div>
+    <p style="margin: 0;">Feedback submitted by customers on your completed repair jobs.</p>
+  </div>
+
+  <div class="card" style="padding: 0;">
+    {% if reviews %}
+      <ul style="list-style: none; margin: 0; padding: 0;">
+        {% for r in reviews %}
+          <li style="padding: 1.5rem; border-bottom: 1px solid var(--gray-100);">
+            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.5rem;">
+              <div>
+                <strong style="font-size: 1.05rem;">{{ r.customer.full_name }}</strong>
+                <div style="font-size: 0.82rem; color: var(--gray-500);">
+                  Repaired: {{ r.job.repair_request.device_name }} &bull; {{ r.created_at|date:"M d, Y" }}
+                </div>
+              </div>
+
+              <div class="star-rating">
+                {% for i in "12345" %}
+                  {% if forloop.counter <= r.rating %}<i class="fa-solid fa-star"></i>{% else %}<i class="fa-regular fa-star"></i>{% endif %}
+                {% endfor %}
+              </div>
+            </div>
+
+            <p style="color: var(--gray-700); margin: 0; font-size: 0.95rem;">
+              "{{ r.comment }}"
+            </p>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <div style="text-align: center; padding: 3rem;">
+        <i class="fa-regular fa-star" style="font-size: 2.5rem; color: var(--gray-400); margin-bottom: 1rem;"></i>
+        <h3>No Reviews Yet</h3>
+        <p>Complete repair jobs and provide exceptional service to earn top customer reviews!</p>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

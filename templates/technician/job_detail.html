@@ -1,0 +1,179 @@
+{% extends 'base.html' %}
+
+{% block title %}Manage Job #{{ job.id }} — RepairNow{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 960px;">
+  <div class="page-header">
+    <div class="breadcrumbs">
+      <a href="{% url 'technician_dashboard' %}">Dashboard</a>
+      <span class="separator">/</span>
+      <a href="{% url 'technician_jobs' %}">Jobs</a>
+      <span class="separator">/</span>
+      <span class="current">Job #{{ job.id }}</span>
+    </div>
+    <a href="{% url 'technician_jobs' %}" class="btn btn-secondary btn-sm">
+      <i class="fa-solid fa-arrow-left"></i> Back to Jobs
+    </a>
+  </div>
+
+  <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 2rem; align-items: start;">
+
+    <div>
+      <div class="card" style="margin-bottom: 1.5rem;">
+        <div class="card-header">
+          <div>
+            <span class="badge badge-urgency-{{ job.repair_request.urgency|lower }}" style="margin-bottom: 0.35rem;">
+              {{ job.repair_request.get_urgency_display }}
+            </span>
+            <h2>Job #{{ job.id }}: {{ job.repair_request.device_name }}</h2>
+            <div style="font-size: 0.88rem; color: var(--gray-500);">
+              Service: {{ job.repair_request.service_category.name }} &bull; Accepted {{ job.accepted_date|date:"M d, Y h:i A" }}
+            </div>
+          </div>
+          <span class="badge badge-{{ job.status|lower }}" style="font-size: 1rem; padding: 0.4rem 0.85rem;">
+            {{ job.get_status_display }}
+          </span>
+        </div>
+
+        <div style="background: var(--gray-50); border: 1px solid var(--gray-200); border-radius: var(--radius-md); padding: 1rem; margin-bottom: 1.5rem;">
+          <h4 style="margin-bottom: 0.35rem;">Reported Issue</h4>
+          <p style="margin-bottom: 0.5rem; color: var(--gray-700);">{{ job.repair_request.problem_description }}</p>
+          {% if job.repair_request.problem_image %}
+            <a href="{{ job.repair_request.problem_image.url }}" target="_blank" class="btn btn-secondary btn-sm">
+              <i class="fa-regular fa-image"></i> View Customer's Fault Image
+            </a>
+          {% endif %}
+        </div>
+
+        <div style="background: #ffffff; border: 2px solid var(--primary); border-radius: var(--radius-md); padding: 1.5rem; margin-bottom: 1.5rem;">
+          <h3 style="font-size: 1.15rem; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+            <i class="fa-solid fa-list-check" style="color: var(--primary);"></i> Update Job Progression
+          </h3>
+
+          {% if job.status == 'ACCEPTED' %}
+            <form method="post" action="{% url 'technician_update_job_status' job.id %}">
+              {% csrf_token %}
+              <input type="hidden" name="status" value="ON_THE_WAY">
+              <p>Ready to travel to the customer's address? Click below to notify the customer that you are on the way.</p>
+              <div class="form-group">
+                <input type="text" name="notes" placeholder="Optional note for customer (e.g. ETA 15 mins)..." class="form-control">
+              </div>
+              <button type="submit" class="btn btn-primary btn-lg btn-block">
+                <i class="fa-solid fa-car-side"></i> Start Journey (On The Way)
+              </button>
+            </form>
+
+          {% elif job.status == 'ON_THE_WAY' %}
+            <form method="post" action="{% url 'technician_update_job_status' job.id %}">
+              {% csrf_token %}
+              <input type="hidden" name="status" value="ARRIVED">
+              <p>Have you reached the customer's address? Mark as arrived so the customer can receive you.</p>
+              <button type="submit" class="btn btn-primary btn-lg btn-block" style="background-color: #0284c7;">
+                <i class="fa-solid fa-location-dot"></i> Mark Arrived at Customer Location
+              </button>
+            </form>
+
+          {% elif job.status == 'ARRIVED' %}
+            <form method="post" action="{% url 'technician_update_job_status' job.id %}">
+              {% csrf_token %}
+              <input type="hidden" name="status" value="IN_PROGRESS">
+              <p>Beginning the diagnostic inspection or repair work? Advance status to In Progress.</p>
+              <button type="submit" class="btn btn-primary btn-lg btn-block" style="background-color: var(--warning); color: #000000;">
+                <i class="fa-solid fa-screwdriver-wrench"></i> Start Repair (In Progress)
+              </button>
+            </form>
+
+          {% elif job.status == 'IN_PROGRESS' %}
+            <form method="post" action="{% url 'technician_update_job_status' job.id %}">
+              {% csrf_token %}
+              <input type="hidden" name="status" value="COMPLETED">
+              <p style="margin-bottom: 1rem;">Repair completed? Enter final billable labor and parts cost to close the job.</p>
+
+              <div class="form-group">
+                <label class="form-label" style="font-weight: 700;">Final Billable Amount (₹) *</label>
+                <input type="number" step="0.01" min="1" name="final_cost" placeholder="e.g. 650.00" class="form-control" required style="font-size: 1.1rem; font-weight: 700;">
+                <div class="form-text">Customer will review this final amount and submit rating.</div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Work Summary / Parts Replaced Notes</label>
+                <textarea name="notes" rows="3" class="form-control" placeholder="Describe the fix applied or parts replaced..."></textarea>
+              </div>
+
+              <button type="submit" class="btn btn-success btn-lg btn-block" onclick="return confirm('Complete this repair job and submit the final invoice?');">
+                <i class="fa-solid fa-circle-check"></i> Complete Job &amp; Send Bill
+              </button>
+            </form>
+
+          {% elif job.status == 'COMPLETED' %}
+            <div style="text-align: center; color: var(--success);">
+              <i class="fa-solid fa-circle-check" style="font-size: 2.5rem; margin-bottom: 0.5rem;"></i>
+              <h3>Job Completed</h3>
+              <p style="color: var(--gray-700); font-size: 1.1rem;">
+                Completed on {{ job.completed_date|date:"M d, Y h:i A" }}<br>
+                Final Billed Cost: <strong>₹{{ job.final_cost }}</strong>
+              </p>
+              {% if job.notes %}
+                <p style="background: var(--gray-50); padding: 0.75rem; border-radius: 6px; font-size: 0.9rem; text-align: left;">
+                  <strong>Completion Notes:</strong> {{ job.notes }}
+                </p>
+              {% endif %}
+            </div>
+          {% endif %}
+        </div>
+
+        <div>
+          <h4 style="margin-bottom: 1rem;"><i class="fa-solid fa-clock-rotate-left"></i> Job Status History</h4>
+          <ul style="list-style: none; padding-left: 0;">
+            {% for item in history %}
+              <li style="display: flex; gap: 0.75rem; margin-bottom: 0.75rem; font-size: 0.9rem;">
+                <i class="fa-solid fa-circle-dot" style="color: var(--primary); margin-top: 4px;"></i>
+                <div>
+                  <strong>{{ item.status }}</strong> &bull; <span style="color: var(--gray-500);">{{ item.timestamp|date:"M d, h:i A" }}</span>
+                  {% if item.note %}<div style="color: var(--gray-600);">{{ item.note }}</div>{% endif %}
+                </div>
+              </li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="card" style="margin-bottom: 1.5rem;">
+        <div class="card-header">
+          <h3 class="card-title"><i class="fa-solid fa-user"></i> Customer Contact</h3>
+        </div>
+        <div style="font-size: 0.95rem;">
+          <h3 style="margin-bottom: 0.5rem;">{{ job.customer.full_name }}</h3>
+          <p style="margin-bottom: 0.5rem;">
+            <a href="tel:{{ job.customer.phone }}" class="btn btn-outline-primary btn-sm btn-block">
+              <i class="fa-solid fa-phone"></i> Call {{ job.customer.phone }}
+            </a>
+          </p>
+          <div style="border-top: 1px solid var(--gray-200); padding-top: 0.75rem; margin-top: 0.75rem;">
+            <strong style="color: var(--gray-700);">Service Address:</strong>
+            <p style="margin: 0.25rem 0 0; color: var(--gray-600);">
+              <i class="fa-solid fa-location-dot" style="color: var(--danger);"></i> {{ job.repair_request.location }}, {{ job.repair_request.city }}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {% if job.review %}
+        <div class="card" style="background: var(--warning-light); border-color: #fde68a;">
+          <h4 style="color: #92400e; margin-bottom: 0.5rem;"><i class="fa-solid fa-star"></i> Customer Review</h4>
+          <div class="star-rating" style="margin-bottom: 0.5rem;">
+            {% for i in "12345" %}
+              {% if forloop.counter <= job.review.rating %}<i class="fa-solid fa-star"></i>{% else %}<i class="fa-regular fa-star"></i>{% endif %}
+            {% endfor %}
+            <span style="color: var(--gray-700); font-weight: 600; margin-left: 0.25rem;">({{ job.review.rating }}/5)</span>
+          </div>
+          <p style="font-size: 0.9rem; color: var(--gray-800); margin: 0;">"{{ job.review.comment }}"</p>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

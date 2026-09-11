@@ -1,0 +1,138 @@
+{% extends 'base.html' %}
+
+{% block title %}Professional Profile — RepairNow{% endblock %}
+
+{% block content %}
+<div class="container">
+
+  <div class="page-header">
+    <div class="breadcrumbs">
+      <a href="{% url 'technician_dashboard' %}">Dashboard</a>
+      <span class="separator">/</span>
+      <span class="current">Profile</span>
+    </div>
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+      <h2 style="margin: 0;">Professional Profile</h2>
+      {% if profile.is_verified %}
+        <span class="badge badge-verified" style="font-size: 0.9rem; padding: 0.4rem 0.9rem;">
+          <i class="fa-solid fa-circle-check"></i> Verified Technician
+        </span>
+      {% else %}
+        <span class="badge badge-pending" style="font-size: 0.9rem; padding: 0.4rem 0.9rem;">
+          <i class="fa-solid fa-clock"></i> {{ profile.get_verification_status_display }}
+        </span>
+      {% endif %}
+    </div>
+    <p style="margin: 0.25rem 0 0;">Update your trade skills, pricing, service areas, and verification details.</p>
+  </div>
+
+  <div class="card" style="padding: 2rem;">
+    <form method="post" enctype="multipart/form-data" novalidate>
+      {% csrf_token %}
+
+      <div style="display: grid; grid-template-columns: 220px 1fr; gap: 2.5rem; align-items: start;">
+
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 1rem; padding: 1.5rem; background: var(--gray-50); border-radius: var(--radius-lg); border: 1px solid var(--gray-200); position: sticky; top: 90px;">
+          {% if profile.profile_image %}
+            <img src="{{ profile.profile_image.url }}" alt="Profile" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 3px solid var(--gray-200);">
+          {% else %}
+            <div style="width: 100px; height: 100px; border-radius: 50%; background: var(--gray-200); display: flex; align-items: center; justify-content: center; font-size: 2.5rem; color: var(--gray-400);">
+              <i class="fa-solid fa-user-tie"></i>
+            </div>
+          {% endif %}
+          <div style="text-align: center;">
+            <div style="font-weight: 700; color: var(--gray-900); font-size: 1rem;">{{ profile.full_name|default:user.username }}</div>
+            <div style="font-size: 0.82rem; color: var(--gray-500); margin-top: 0.2rem;">{{ user.email }}</div>
+          </div>
+          <div class="form-group" style="width: 100%; margin-bottom: 0.75rem;">
+            <label class="form-label" style="font-size: 0.8rem;">Change Photo</label>
+            {{ form.profile_image }}
+          </div>
+          <div class="form-group" style="width: 100%; margin-bottom: 0;">
+            <label class="form-label" style="font-size: 0.8rem;">Verification Document</label>
+            {{ form.verification_document }}
+            {% if profile.verification_document %}
+              <div style="margin-top: 0.5rem; font-size: 0.8rem;">
+                <a href="{{ profile.verification_document.url }}" target="_blank"><i class="fa-solid fa-file"></i> View current</a>
+              </div>
+            {% endif %}
+          </div>
+        </div>
+
+        <div>
+          <p style="font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--primary); margin-bottom: 1rem;">Personal &amp; Contact</p>
+
+          <div class="form-row" style="margin-bottom: 1.25rem;">
+            <div class="form-group" style="margin-bottom: 0;">
+              <label class="form-label" for="{{ form.full_name.id_for_label }}">Full Name *</label>
+              {{ form.full_name }}
+              {% if form.full_name.errors %}<div class="form-error">{{ form.full_name.errors.0 }}</div>{% endif %}
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <label class="form-label" for="{{ form.phone.id_for_label }}">Phone Number *</label>
+              {{ form.phone }}
+              {% if form.phone.errors %}<div class="form-error">{{ form.phone.errors.0 }}</div>{% endif %}
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="{{ form.bio.id_for_label }}">Professional Bio</label>
+            {{ form.bio }}
+            <div class="form-text">Shown to customers on your recommendation card.</div>
+          </div>
+
+          <p style="font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--primary); margin: 1.75rem 0 1rem;">Skills &amp; Pricing</p>
+
+          <div class="form-group">
+            <label class="form-label">Supported Service Categories *</label>
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 0.5rem; background: var(--gray-50); padding: 1rem; border-radius: var(--radius-md); border: 1px solid var(--gray-200);">
+              {{ form.skills }}
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="{{ form.experience.id_for_label }}">Years of Experience *</label>
+              {{ form.experience }}
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="{{ form.estimated_cost_min.id_for_label }}">Min Cost (₹) *</label>
+              {{ form.estimated_cost_min }}
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="{{ form.estimated_cost_max.id_for_label }}">Max Cost (₹) *</label>
+              {{ form.estimated_cost_max }}
+            </div>
+          </div>
+
+          <p style="font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--primary); margin: 1.75rem 0 1rem;">Service Area</p>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="{{ form.service_area.id_for_label }}">Service Area / Localities *</label>
+              {{ form.service_area }}
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="{{ form.city.id_for_label }}">City *</label>
+              {{ form.city }}
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="{{ form.address.id_for_label }}">Workshop / Base Address</label>
+            {{ form.address }}
+          </div>
+
+          <div style="padding-top: 1.25rem; border-top: 1px solid var(--gray-100); margin-top: 0.5rem;">
+            <button type="submit" class="btn btn-primary btn-lg">
+              <i class="fa-solid fa-save"></i> Save Profile Changes
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </form>
+  </div>
+
+</div>
+{% endblock %}

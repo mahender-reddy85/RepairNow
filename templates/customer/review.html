@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+
+{% block title %}Rate &amp; Review — RepairNow{% endblock %}
+
+{% block content %}
+<div class="container container-narrow">
+  <div class="card" style="padding: 2.5rem; text-align: center;">
+    <div class="page-header" style="text-align: center; margin-bottom: 1.5rem;">
+      <div class="breadcrumbs" style="justify-content: center;">
+        <a href="{% url 'customer_dashboard' %}">Dashboard</a>
+        <span class="separator">/</span>
+        <a href="{% url 'customer_repair_track' job.repair_request.id %}">Track Repair</a>
+        <span class="separator">/</span>
+        <span class="current">Rate & Review</span>
+      </div>
+      <span class="badge badge-success" style="margin-bottom: 0.75rem;">Repair Completed</span>
+      <h2>Rate Your Technician</h2>
+      <p>How was your experience with <strong>{{ job.technician.full_name }}</strong> for repairing your <strong>{{ job.repair_request.device_name }}</strong>?</p>
+    </div>
+
+    <div style="margin: 1.5rem 0; padding: 1.25rem; background: var(--gray-50); border-radius: var(--radius-md); display: inline-flex; align-items: center; gap: 1rem;">
+      <div class="tech-avatar" style="width: 50px; height: 50px; font-size: 1.25rem;"><i class="fa-solid fa-user-tie"></i></div>
+      <div style="text-align: left;">
+        <strong>{{ job.technician.full_name }}</strong>
+        <div style="font-size: 0.85rem; color: var(--gray-500);">Final Cost: ₹{{ job.final_cost }} &bull; {{ job.completed_date|date:"M d, Y" }}</div>
+      </div>
+    </div>
+
+    <form method="post" style="max-width: 500px; margin: 0 auto;" novalidate>
+      {% csrf_token %}
+
+      <div class="form-group" style="margin-bottom: 1.75rem;">
+        <label class="form-label" style="font-size: 1rem;">Select Rating (1 to 5 Stars) *</label>
+        <div style="display: flex; justify-content: center; gap: 1.5rem; font-size: 1.1rem; margin-top: 0.5rem;">
+          {% for radio in form.rating %}
+            <label style="cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 0.35rem;">
+              {{ radio.tag }}
+              <span style="font-size: 0.85rem; color: var(--gray-600);"><i class="fa-solid fa-star" style="color: #f59e0b;"></i> {{ radio.choice_label }}</span>
+            </label>
+          {% endfor %}
+        </div>
+        {% if form.rating.errors %}<div class="form-error">{{ form.rating.errors.0 }}</div>{% endif %}
+      </div>
+
+      <div class="form-group" style="text-align: left;">
+        <label class="form-label" for="{{ form.comment.id_for_label }}">Write your review *</label>
+        {{ form.comment }}
+        {% if form.comment.errors %}<div class="form-error">{{ form.comment.errors.0 }}</div>{% endif %}
+      </div>
+
+      <div style="display: flex; gap: 1rem; justify-content: center; margin-top: 1.5rem;">
+        <button type="submit" class="btn btn-primary btn-lg">
+          <i class="fa-solid fa-paper-plane"></i> Submit Review
+        </button>
+        <a href="{% url 'customer_repair_track' job.repair_request.id %}" class="btn btn-secondary btn-lg">Skip for now</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

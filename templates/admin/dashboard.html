@@ -1,0 +1,226 @@
+{% extends 'base.html' %}
+
+{% block title %}Administrator Control Center — RepairNow{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
+      <h2>Admin Management Portal</h2>
+      <span class="badge badge-verified"><i class="fa-solid fa-shield-halved"></i> Superuser</span>
+    </div>
+    <p>High-level platform metrics, technician moderation, and request monitoring.</p>
+  </div>
+
+  <div style="display: flex; gap: 0.5rem; margin-bottom: 2rem;">
+    <a href="{% url 'admin_verifications' %}" class="btn btn-warning btn-sm">
+      <i class="fa-solid fa-user-check"></i> Pending Verifications ({{ pending_verifications }})
+    </a>
+    <a href="/django-admin/" class="btn btn-secondary btn-sm" target="_blank">
+      <i class="fa-solid fa-gear"></i> Django Admin
+    </a>
+  </div>
+
+  <div class="card" style="padding: 0.75rem 1.25rem; margin-bottom: 2rem;">
+    <div style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: center;">
+      <a href="{% url 'admin_dashboard' %}" class="btn btn-primary btn-sm">Dashboard</a>
+      <a href="{% url 'admin_users' %}" class="btn btn-secondary btn-sm">Customers &amp; Users</a>
+      <a href="{% url 'admin_technicians' %}" class="btn btn-secondary btn-sm">Technicians</a>
+      <a href="{% url 'admin_verifications' %}" class="btn btn-secondary btn-sm">Verifications</a>
+      <a href="{% url 'admin_services' %}" class="btn btn-secondary btn-sm">Service Categories</a>
+      <a href="{% url 'admin_requests' %}" class="btn btn-secondary btn-sm">Repair Requests</a>
+      <a href="{% url 'admin_reviews' %}" class="btn btn-secondary btn-sm">Reviews</a>
+      <a href="{% url 'admin_complaints' %}" class="btn btn-secondary btn-sm">Complaints</a>
+    </div>
+  </div>
+
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-icon stat-icon-blue"><i class="fa-solid fa-users"></i></div>
+      <div>
+        <div class="stat-value">{{ total_customers }}</div>
+        <div class="stat-label">Total Customers</div>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon stat-icon-purple"><i class="fa-solid fa-user-gear"></i></div>
+      <div>
+        <div class="stat-value">{{ total_technicians }}</div>
+        <div class="stat-label">Total Technicians</div>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon stat-icon-green"><i class="fa-solid fa-user-check"></i></div>
+      <div>
+        <div class="stat-value">{{ verified_technicians }}</div>
+        <div class="stat-label">Verified Technicians</div>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon stat-icon-amber"><i class="fa-solid fa-hourglass-half"></i></div>
+      <div>
+        <div class="stat-value">{{ pending_verifications }}</div>
+        <div class="stat-label">Pending Verifications</div>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon stat-icon-blue"><i class="fa-solid fa-bolt"></i></div>
+      <div>
+        <div class="stat-value">{{ active_requests }}</div>
+        <div class="stat-label">Active Requests</div>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon stat-icon-green"><i class="fa-solid fa-circle-check"></i></div>
+      <div>
+        <div class="stat-value">{{ completed_jobs }}</div>
+        <div class="stat-label">Completed Jobs</div>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon" style="background-color: var(--danger-light); color: var(--danger);"><i class="fa-solid fa-ban"></i></div>
+      <div>
+        <div class="stat-value">{{ cancelled_jobs }}</div>
+        <div class="stat-label">Cancelled Jobs</div>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon stat-icon-amber"><i class="fa-solid fa-star"></i></div>
+      <div>
+        <div class="stat-value">{{ average_platform_rating|floatformat:1 }}</div>
+        <div class="stat-label">Avg Platform Rating</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-top: 1rem;">
+
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title"><i class="fa-solid fa-user-clock" style="color: var(--warning);"></i> Pending Technician Approvals</h3>
+        <a href="{% url 'admin_verifications' %}" class="btn btn-secondary btn-sm">Review All</a>
+      </div>
+
+      {% if pending_techs %}
+        <div class="table-responsive">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Technician</th>
+                <th>Experience</th>
+                <th>City</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for tech in pending_techs %}
+                <tr>
+                  <td>
+                    <strong>{{ tech.full_name }}</strong>
+                    <div style="font-size: 0.8rem; color: var(--gray-500);">@{{ tech.user.username }}</div>
+                  </td>
+                  <td>{{ tech.experience }} yrs</td>
+                  <td>{{ tech.city }}</td>
+                  <td>
+                    <div style="display: flex; gap: 0.35rem;">
+                      <a href="{% url 'admin_verify_technician' tech.id 'approve' %}" class="btn btn-success btn-sm" title="Approve">
+                        <i class="fa-solid fa-check"></i>
+                      </a>
+                      <a href="{% url 'admin_verify_technician' tech.id 'reject' %}" class="btn btn-danger btn-sm" title="Reject">
+                        <i class="fa-solid fa-xmark"></i>
+                      </a>
+                    </div>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <p style="text-align: center; color: var(--gray-500); padding: 2rem 0;">No pending verification applications!</p>
+      {% endif %}
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title"><i class="fa-regular fa-flag" style="color: var(--danger);"></i> Open Inquiries &amp; Complaints</h3>
+        <a href="{% url 'admin_complaints' %}" class="btn btn-secondary btn-sm">Manage All</a>
+      </div>
+
+      {% if open_complaints %}
+        <div class="table-responsive">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>User</th>
+                <th>Subject</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for c in open_complaints %}
+                <tr>
+                  <td>{{ c.user.username }}</td>
+                  <td><strong>{{ c.subject|truncatechars:25 }}</strong></td>
+                  <td><span class="badge badge-warning">{{ c.get_status_display }}</span></td>
+                  <td>
+                    <a href="{% url 'admin_complaints' %}" class="btn btn-secondary btn-sm">Review</a>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <p style="text-align: center; color: var(--gray-500); padding: 2rem 0;">No open complaints or dispute tickets.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="card" style="margin-top: 2rem;">
+    <div class="card-header">
+      <h3 class="card-title"><i class="fa-solid fa-list-check" style="color: var(--primary);"></i> Recent Repair Requests Across Platform</h3>
+      <a href="{% url 'admin_requests' %}" class="btn btn-secondary btn-sm">View All Requests</a>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Customer</th>
+            <th>Device</th>
+            <th>Category</th>
+            <th>Urgency</th>
+            <th>Status</th>
+            <th>Selected Tech</th>
+            <th>Created Date</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in recent_requests %}
+            <tr>
+              <td><strong>#{{ r.id }}</strong></td>
+              <td>{{ r.customer.full_name }}</td>
+              <td><strong>{{ r.device_name }}</strong></td>
+              <td>{{ r.service_category.name }}</td>
+              <td><span class="badge badge-urgency-{{ r.urgency|lower }}">{{ r.get_urgency_display|truncatewords:2 }}</span></td>
+              <td><span class="badge badge-{{ r.status|lower }}">{{ r.get_status_display }}</span></td>
+              <td>{{ r.selected_technician.full_name|default:"—" }}</td>
+              <td>{{ r.created_at|date:"M d, Y" }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

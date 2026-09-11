@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+
+{% block title %}Technician Jobs — RepairNow{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <div class="breadcrumbs">
+      <a href="{% url 'technician_dashboard' %}">Dashboard</a>
+      <span class="separator">/</span>
+      <span class="current">Jobs</span>
+    </div>
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+      <h2>Manage Jobs</h2>
+
+      <div style="display: flex; gap: 0.5rem;">
+        <a href="{% url 'technician_jobs' %}" class="btn btn-secondary btn-sm {% if not selected_status %}active{% endif %}">All</a>
+        <a href="{% url 'technician_jobs' %}?status=ACCEPTED" class="btn btn-secondary btn-sm {% if selected_status == 'ACCEPTED' %}active{% endif %}">Accepted</a>
+        <a href="{% url 'technician_jobs' %}?status=ON_THE_WAY" class="btn btn-secondary btn-sm {% if selected_status == 'ON_THE_WAY' %}active{% endif %}">On The Way</a>
+        <a href="{% url 'technician_jobs' %}?status=IN_PROGRESS" class="btn btn-secondary btn-sm {% if selected_status == 'IN_PROGRESS' %}active{% endif %}">In Progress</a>
+        <a href="{% url 'technician_jobs' %}?status=COMPLETED" class="btn btn-secondary btn-sm {% if selected_status == 'COMPLETED' %}active{% endif %}">Completed</a>
+      </div>
+    </div>
+    <p style="margin: 0;">Overview of active and past repair jobs assigned to you.</p>
+  </div>
+
+  <div class="card">
+    {% if jobs %}
+      <div class="table-responsive">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Job ID</th>
+              <th>Customer</th>
+              <th>Device / Category</th>
+              <th>Customer Phone</th>
+              <th>Location</th>
+              <th>Accepted Date</th>
+              <th>Status</th>
+              <th>Final Cost</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for job in jobs %}
+              <tr>
+                <td><strong>#{{ job.id }}</strong></td>
+                <td>{{ job.customer.full_name }}</td>
+                <td>
+                  <strong>{{ job.repair_request.device_name }}</strong>
+                  <div style="font-size: 0.8rem; color: var(--gray-500);">{{ job.repair_request.service_category.name }}</div>
+                </td>
+                <td><i class="fa-solid fa-phone" style="color: var(--primary);"></i> {{ job.customer.phone }}</td>
+                <td>{{ job.repair_request.location }}</td>
+                <td>{{ job.accepted_date|date:"M d, Y" }}</td>
+                <td><span class="badge badge-{{ job.status|lower }}">{{ job.get_status_display }}</span></td>
+                <td><strong>{% if job.final_cost %}₹{{ job.final_cost }}{% else %}—{% endif %}</strong></td>
+                <td>
+                  <a href="{% url 'technician_job_detail' job.id %}" class="btn btn-primary btn-sm">
+                    Manage <i class="fa-solid fa-arrow-right"></i>
+                  </a>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div style="text-align: center; padding: 3rem;">
+        <i class="fa-solid fa-briefcase" style="font-size: 2.5rem; color: var(--gray-400); margin-bottom: 1rem;"></i>
+        <h3>No Jobs Found</h3>
+        <p>You have no jobs matching this category right now.</p>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

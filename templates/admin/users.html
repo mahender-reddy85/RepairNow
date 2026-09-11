@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+
+{% block title %}Manage Users — Admin Portal{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <div class="breadcrumbs">
+      <a href="{% url 'admin_dashboard' %}">Dashboard</a>
+      <span class="separator">/</span>
+      <span class="current">Users</span>
+    </div>
+    <h2>User Management</h2>
+    <p style="margin: 0;">Search, inspect, and toggle active status for customer and technician accounts.</p>
+  </div>
+
+  <div class="card" style="margin-bottom: 1.5rem; padding: 1rem 1.5rem;">
+    <form method="get" style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: center;">
+      <input type="text" name="q" value="{{ query }}" placeholder="Search username or email..." class="form-control" style="width: 250px;">
+
+      <select name="role" class="form-select" style="width: auto;">
+        <option value="">All Roles</option>
+        <option value="CUSTOMER" {% if role_filter == 'CUSTOMER' %}selected{% endif %}>Customer</option>
+        <option value="TECHNICIAN" {% if role_filter == 'TECHNICIAN' %}selected{% endif %}>Technician</option>
+        <option value="ADMIN" {% if role_filter == 'ADMIN' %}selected{% endif %}>Administrator</option>
+      </select>
+
+      <button type="submit" class="btn btn-primary btn-sm">Search</button>
+      {% if query or role_filter %}
+        <a href="{% url 'admin_users' %}" class="btn btn-secondary btn-sm">Reset</a>
+      {% endif %}
+    </form>
+  </div>
+
+  <div class="card">
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Username</th>
+            <th>Email</th>
+            <th>Role</th>
+            <th>Date Joined</th>
+            <th>Active Status</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for u in users %}
+            <tr>
+              <td>#{{ u.id }}</td>
+              <td><strong>{{ u.username }}</strong></td>
+              <td>{{ u.email }}</td>
+              <td>
+                <span class="badge {% if u.role == 'ADMIN' %}badge-verified{% elif u.role == 'TECHNICIAN' %}badge-info{% else %}badge-pending{% endif %}">
+                  {{ u.get_role_display }}
+                </span>
+              </td>
+              <td>{{ u.date_joined|date:"M d, Y" }}</td>
+              <td>
+                {% if u.is_active %}
+                  <span class="badge badge-success">Active</span>
+                {% else %}
+                  <span class="badge badge-danger">Deactivated</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if u != request.user %}
+                  <a href="{% url 'admin_toggle_user_active' u.id %}" class="btn btn-sm {% if u.is_active %}btn-danger{% else %}btn-success{% endif %}" onclick="return confirm('Toggle active status for user {{ u.username }}?');">
+                    {% if u.is_active %}Deactivate{% else %}Activate{% endif %}
+                  </a>
+                {% else %}
+                  <span style="font-size: 0.8rem; color: var(--gray-400);">Current Admin</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

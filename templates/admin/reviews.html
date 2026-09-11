@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+
+{% block title %}Moderate Reviews — Admin Portal{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <div class="breadcrumbs">
+      <a href="{% url 'admin_dashboard' %}">Dashboard</a>
+      <span class="separator">/</span>
+      <span class="current">Reviews</span>
+    </div>
+    <h2>Customer Reviews Moderation</h2>
+    <p style="margin: 0;">Inspect and moderate customer feedback and star ratings across all completed jobs.</p>
+  </div>
+
+  <div class="card">
+    {% if reviews %}
+      <div class="table-responsive">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Customer</th>
+              <th>Technician</th>
+              <th>Rating</th>
+              <th>Comment</th>
+              <th>Date</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in reviews %}
+              <tr>
+                <td>#{{ r.id }}</td>
+                <td><strong>{{ r.customer.full_name }}</strong></td>
+                <td>{{ r.technician.full_name }}</td>
+                <td>
+                  <span class="star-rating">
+                    <i class="fa-solid fa-star"></i> {{ r.rating }} / 5
+                  </span>
+                </td>
+                <td style="max-width: 320px;">"{{ r.comment }}"</td>
+                <td>{{ r.created_at|date:"M d, Y" }}</td>
+                <td>
+                  <form method="post" onsubmit="return confirm('Delete this review permanently? Technician average rating will be recalculated.');">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="delete">
+                    <input type="hidden" name="review_id" value="{{ r.id }}">
+                    <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                  </form>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div style="text-align: center; padding: 3rem;">
+        <i class="fa-regular fa-star" style="font-size: 2.5rem; color: var(--gray-400); margin-bottom: 1rem;"></i>
+        <h3>No Reviews Yet</h3>
+        <p>No customer reviews have been submitted on the platform yet.</p>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

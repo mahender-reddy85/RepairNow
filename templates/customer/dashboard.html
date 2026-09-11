@@ -1,0 +1,163 @@
+{% extends 'base.html' %}
+
+{% block title %}Customer Dashboard — RepairNow{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="page-header" style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
+    <div>
+      <h2>Hello, {{ profile.full_name|default:user.username }}!</h2>
+      <p style="margin: 0;">Welcome to your RepairNow dashboard. Monitor your active repairs or book a new technician.</p>
+    </div>
+    <a href="{% url 'customer_repair_create' %}" class="btn btn-primary btn-lg" style="flex-shrink: 0;">
+      <i class="fa-solid fa-plus-circle"></i> Create Repair Request
+    </a>
+  </div>
+
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-icon stat-icon-blue"><i class="fa-solid fa-clock-rotate-left"></i></div>
+      <div>
+        <div class="stat-value">{{ pending_count }}</div>
+        <div class="stat-label">Pending / Matching</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon stat-icon-amber"><i class="fa-solid fa-screwdriver-wrench"></i></div>
+      <div>
+        <div class="stat-value">{{ ongoing_count }}</div>
+        <div class="stat-label">Ongoing Repairs</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon stat-icon-green"><i class="fa-solid fa-circle-check"></i></div>
+      <div>
+        <div class="stat-value">{{ completed_count }}</div>
+        <div class="stat-label">Completed Repairs</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom: 2rem;">
+    <div class="card-header">
+      <h3 class="card-title"><i class="fa-solid fa-bolt" style="color: var(--primary);"></i> Active Repairs &amp; Requests</h3>
+      <a href="{% url 'customer_repair_list' %}" class="btn btn-secondary btn-sm">View All</a>
+    </div>
+
+    {% if active_requests %}
+      <div class="table-responsive">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Device / Equipment</th>
+              <th>Service</th>
+              <th>Urgency</th>
+              <th>Technician</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for req in active_requests %}
+              <tr>
+                <td><strong>#{{ req.id }}</strong></td>
+                <td>
+                  <strong>{{ req.device_name }}</strong>
+                  <div style="font-size: 0.8rem; color: var(--gray-500);">Preferred: {{ req.preferred_date|date:"M d, Y" }} ({{ req.preferred_time }})</div>
+                </td>
+                <td>{{ req.service_category.name }}</td>
+                <td>
+                  <span class="badge badge-urgency-{{ req.urgency|lower }}">{{ req.get_urgency_display|truncatewords:2 }}</span>
+                </td>
+                <td>
+                  {% if req.selected_technician %}
+                    <span style="font-weight: 600;">{{ req.selected_technician.full_name }}</span>
+                    {% if req.selected_technician.is_verified %}
+                      <i class="fa-solid fa-circle-check" style="color: var(--primary);" title="Verified"></i>
+                    {% endif %}
+                  {% else %}
+                    <span style="color: var(--gray-400); font-style: italic;">Not Selected</span>
+                  {% endif %}
+                </td>
+                <td>
+                  <span class="badge badge-{{ req.status|lower }}">{{ req.get_status_display }}</span>
+                </td>
+                <td>
+                  {% if not req.selected_technician %}
+                    <a href="{% url 'customer_repair_matches' req.id %}" class="btn btn-primary btn-sm">
+                      <i class="fa-solid fa-users"></i> View Matches
+                    </a>
+                  {% else %}
+                    <a href="{% url 'customer_repair_track' req.id %}" class="btn btn-outline-primary btn-sm">
+                      <i class="fa-solid fa-location-crosshairs"></i> Track Live
+                    </a>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div style="text-align: center; padding: 2.5rem;">
+        <i class="fa-solid fa-screwdriver-wrench" style="font-size: 2.5rem; color: var(--gray-400); margin-bottom: 0.75rem;"></i>
+        <h4>No Active Repairs</h4>
+        <p>You have no pending or ongoing repair requests right now.</p>
+        <a href="{% url 'customer_repair_create' %}" class="btn btn-primary btn-sm">Create a Repair Request</a>
+      </div>
+    {% endif %}
+  </div>
+
+  {% if recent_history %}
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title"><i class="fa-solid fa-clock-rotate-left"></i> Recently Completed Repairs</h3>
+        <a href="{% url 'customer_history' %}" class="btn btn-secondary btn-sm">Full History</a>
+      </div>
+      <div class="table-responsive">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Job ID</th>
+              <th>Device</th>
+              <th>Technician</th>
+              <th>Completed Date</th>
+              <th>Final Cost</th>
+              <th>Review Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for job in recent_history %}
+              <tr>
+                <td>#{{ job.id }}</td>
+                <td><strong>{{ job.repair_request.device_name }}</strong></td>
+                <td>{{ job.technician.full_name }}</td>
+                <td>{{ job.completed_date|date:"M d, Y" }}</td>
+                <td><strong>₹{{ job.final_cost|default:"N/A" }}</strong></td>
+                <td>
+                  {% if job.review %}
+                    <span class="star-rating">
+                      {% for i in "12345" %}
+                        {% if forloop.counter <= job.review.rating %}
+                          <i class="fa-solid fa-star"></i>
+                        {% else %}
+                          <i class="fa-regular fa-star"></i>
+                        {% endif %}
+                      {% endfor %}
+                    </span>
+                  {% else %}
+                    <a href="{% url 'submit_review' job.id %}" class="btn btn-primary btn-sm">
+                      <i class="fa-solid fa-star"></i> Rate &amp; Review
+                    </a>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

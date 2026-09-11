@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+
+{% block title %}Register as Customer — RepairNow{% endblock %}
+
+{% block content %}
+<div class="container container-narrow">
+  <div class="card" style="padding: 2.5rem;">
+    <div style="text-align: center; margin-bottom: 2rem;">
+      <span class="badge badge-info" style="margin-bottom: 0.5rem;">Customer Account</span>
+      <h2>Create Your Account</h2>
+      <p>Sign up to book verified local repair technicians with instant matching and live status tracking.</p>
+    </div>
+
+    <form method="post" novalidate>
+      {% csrf_token %}
+      
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="{{ form.full_name.id_for_label }}">Full Name *</label>
+          {{ form.full_name }}
+          {% if form.full_name.errors %}<div class="form-error">{{ form.full_name.errors.0 }}</div>{% endif %}
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="{{ form.phone.id_for_label }}">Mobile Phone Number *</label>
+          {{ form.phone }}
+          {% if form.phone.errors %}<div class="form-error">{{ form.phone.errors.0 }}</div>{% endif %}
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="{{ form.username.id_for_label }}">Username *</label>
+          {{ form.username }}
+          {% if form.username.errors %}<div class="form-error">{{ form.username.errors.0 }}</div>{% endif %}
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="{{ form.email.id_for_label }}">Email Address *</label>
+          {{ form.email }}
+          {% if form.email.errors %}<div class="form-error">{{ form.email.errors.0 }}</div>{% endif %}
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="{{ form.address.id_for_label }}">Street / House Address *</label>
+        {{ form.address }}
+        {% if form.address.errors %}<div class="form-error">{{ form.address.errors.0 }}</div>{% endif %}
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="{{ form.city.id_for_label }}">City *</label>
+          {{ form.city }}
+          {% if form.city.errors %}<div class="form-error">{{ form.city.errors.0 }}</div>{% endif %}
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="{{ form.state.id_for_label }}">State *</label>
+          {{ form.state }}
+          {% if form.state.errors %}<div class="form-error">{{ form.state.errors.0 }}</div>{% endif %}
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="{{ form.postal_code.id_for_label }}">Postal Code / Pincode</label>
+          {{ form.postal_code }}
+          {% if form.postal_code.errors %}<div class="form-error">{{ form.postal_code.errors.0 }}</div>{% endif %}
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="{{ form.password.id_for_label }}">Password *</label>
+          {{ form.password }}
+          {% if form.password.errors %}<div class="form-error">{{ form.password.errors.0 }}</div>{% endif %}
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="{{ form.confirm_password.id_for_label }}">Confirm Password *</label>
+          {{ form.confirm_password }}
+          {% if form.confirm_password.errors %}<div class="form-error">{{ form.confirm_password.errors.0 }}</div>{% endif %}
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-block" style="padding: 0.85rem; font-size: 1rem; margin-top: 1rem;">
+        <i class="fa-solid fa-user-plus"></i> Complete Customer Registration
+      </button>
+    </form>
+
+    <div style="margin-top: 2rem; text-align: center; border-top: 1px solid var(--border); padding-top: 1.25rem;">
+      <p style="margin-bottom: 0;">Already registered? <a href="{% url 'login' %}"><strong>Sign In here</strong></a></p>
+    </div>
+  </div>
+</div>
+{% endblock %}

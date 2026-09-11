@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+
+{% block title %}Manage Availability — RepairNow{% endblock %}
+
+{% block content %}
+<div class="container container-narrow">
+  <div class="card" style="padding: 2.5rem;">
+    <div class="page-header" style="margin-bottom: 2rem;">
+      <div class="breadcrumbs">
+        <a href="{% url 'technician_dashboard' %}">Dashboard</a>
+        <span class="separator">/</span>
+        <span class="current">Availability</span>
+      </div>
+      <h2>Availability &amp; Working Hours</h2>
+      <p style="margin: 0;">Configure your real-time status and standard weekly working hours. The matching engine factors this into your availability score.</p>
+    </div>
+
+    <form method="post">
+      {% csrf_token %}
+
+      <div style="background: var(--gray-50); border: 1px solid var(--gray-200); border-radius: var(--radius-md); padding: 1.25rem; margin-bottom: 2rem;">
+        <h4 style="margin-bottom: 0.5rem; color: var(--gray-900);">Current Operational Status</h4>
+        <div style="display: flex; gap: 1rem; align-items: center;">
+          <select name="availability_status" class="form-select" style="max-width: 250px;">
+            <option value="AVAILABLE" {% if profile.availability_status == 'AVAILABLE' %}selected{% endif %}>🟢 Available for New Jobs</option>
+            <option value="BUSY" {% if profile.availability_status == 'BUSY' %}selected{% endif %}>🟡 Busy (Engaged on Site)</option>
+            <option value="OFFLINE" {% if profile.availability_status == 'OFFLINE' %}selected{% endif %}>🔴 Offline (Not Taking Requests)</option>
+          </select>
+          <span style="font-size: 0.85rem; color: var(--gray-500);">Instant status overrides weekly schedule for emergency requests.</span>
+        </div>
+      </div>
+
+      <h4 style="margin-bottom: 1rem; color: var(--gray-900);">Weekly Working Schedule</h4>
+
+      <div class="table-responsive" style="margin-bottom: 2rem;">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Day of Week</th>
+              <th>Available?</th>
+              <th>Starting Time</th>
+              <th>Ending Time</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for day_name, slot in schedule %}
+              <tr>
+                <td><strong>{{ day_name }}</strong></td>
+                <td>
+                  <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                    <input type="checkbox" name="avail_{{ slot.day_of_week }}" {% if slot.is_available %}checked{% endif %}>
+                    <span>Available</span>
+                  </label>
+                </td>
+                <td>
+                  <input type="time" name="start_{{ slot.day_of_week }}" value="{{ slot.start_time|time:'H:i' }}" class="form-control" style="width: 140px; padding: 0.35rem 0.6rem;">
+                </td>
+                <td>
+                  <input type="time" name="end_{{ slot.day_of_week }}" value="{{ slot.end_time|time:'H:i' }}" class="form-control" style="width: 140px; padding: 0.35rem 0.6rem;">
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-lg">
+        <i class="fa-solid fa-save"></i> Save Availability Schedule
+      </button>
+    </form>
+  </div>
+</div>
+{% endblock %}

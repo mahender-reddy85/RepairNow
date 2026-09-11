@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+
+{% block title %}Monitor Repair Requests — Admin Portal{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <div class="breadcrumbs">
+      <a href="{% url 'admin_dashboard' %}">Dashboard</a>
+      <span class="separator">/</span>
+      <span class="current">Requests</span>
+    </div>
+    <h2>Platform Repair Requests Monitor</h2>
+    <p style="margin: 0;">Supervise all repair requests across various life-cycle stages.</p>
+  </div>
+
+  <div class="card" style="margin-bottom: 1.5rem; padding: 1rem 1.5rem;">
+    <form method="get" style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: center;">
+      <input type="text" name="q" value="{{ query }}" placeholder="Search device or customer..." class="form-control" style="width: 240px;">
+
+      <select name="status" class="form-select" style="width: auto;">
+        <option value="">All Statuses</option>
+        <option value="PENDING" {% if status_filter == 'PENDING' %}selected{% endif %}>Pending</option>
+        <option value="MATCHING" {% if status_filter == 'MATCHING' %}selected{% endif %}>Matching</option>
+        <option value="TECHNICIAN_SELECTED" {% if status_filter == 'TECHNICIAN_SELECTED' %}selected{% endif %}>Tech Selected</option>
+        <option value="ACCEPTED" {% if status_filter == 'ACCEPTED' %}selected{% endif %}>Accepted</option>
+        <option value="IN_PROGRESS" {% if status_filter == 'IN_PROGRESS' %}selected{% endif %}>In Progress</option>
+        <option value="COMPLETED" {% if status_filter == 'COMPLETED' %}selected{% endif %}>Completed</option>
+        <option value="CANCELLED" {% if status_filter == 'CANCELLED' %}selected{% endif %}>Cancelled</option>
+      </select>
+
+      <select name="urgency" class="form-select" style="width: auto;">
+        <option value="">All Urgencies</option>
+        <option value="EMERGENCY" {% if urgency_filter == 'EMERGENCY' %}selected{% endif %}>Emergency</option>
+        <option value="HIGH" {% if urgency_filter == 'HIGH' %}selected{% endif %}>High</option>
+        <option value="MEDIUM" {% if urgency_filter == 'MEDIUM' %}selected{% endif %}>Medium</option>
+        <option value="LOW" {% if urgency_filter == 'LOW' %}selected{% endif %}>Low</option>
+      </select>
+
+      <button type="submit" class="btn btn-primary btn-sm">Filter</button>
+      {% if query or status_filter or urgency_filter %}
+        <a href="{% url 'admin_requests' %}" class="btn btn-secondary btn-sm">Reset</a>
+      {% endif %}
+    </form>
+  </div>
+
+  <div class="card">
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Customer</th>
+            <th>Device Name</th>
+            <th>Category</th>
+            <th>Urgency</th>
+            <th>Status</th>
+            <th>Assigned Technician</th>
+            <th>Location</th>
+            <th>Created Date</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in requests %}
+            <tr>
+              <td><strong>#{{ r.id }}</strong></td>
+              <td>{{ r.customer.full_name }}</td>
+              <td><strong>{{ r.device_name }}</strong></td>
+              <td>{{ r.service_category.name }}</td>
+              <td><span class="badge badge-urgency-{{ r.urgency|lower }}">{{ r.get_urgency_display|truncatewords:2 }}</span></td>
+              <td><span class="badge badge-{{ r.status|lower }}">{{ r.get_status_display }}</span></td>
+              <td>{{ r.selected_technician.full_name|default:"Unassigned" }}</td>
+              <td>{{ r.city }}</td>
+              <td>{{ r.created_at|date:"M d, Y" }}</td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="9" style="text-align: center; padding: 2rem;">No requests match the specified criteria.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

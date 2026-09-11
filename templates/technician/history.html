@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+
+{% block title %}Technician Job History — RepairNow{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <div class="breadcrumbs">
+      <a href="{% url 'technician_dashboard' %}">Dashboard</a>
+      <span class="separator">/</span>
+      <span class="current">History</span>
+    </div>
+    <h2>Completed Jobs History</h2>
+    <p style="margin: 0;">Record of all repair tasks completed by you on RepairNow.</p>
+  </div>
+
+  <div class="card">
+    {% if completed_jobs %}
+      <div class="table-responsive">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Job ID</th>
+              <th>Customer</th>
+              <th>Device</th>
+              <th>Completion Date</th>
+              <th>Final Billed Amount</th>
+              <th>Review Rating</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for job in completed_jobs %}
+              <tr>
+                <td><strong>#{{ job.id }}</strong></td>
+                <td>{{ job.customer.full_name }}</td>
+                <td><strong>{{ job.repair_request.device_name }}</strong></td>
+                <td>{{ job.completed_date|date:"M d, Y" }}</td>
+                <td><strong>₹{{ job.final_cost }}</strong></td>
+                <td>
+                  {% if job.review %}
+                    <span class="star-rating">
+                      <i class="fa-solid fa-star"></i> {{ job.review.rating }}/5
+                    </span>
+                  {% else %}
+                    <span style="color: var(--gray-400);">No review yet</span>
+                  {% endif %}
+                </td>
+                <td>
+                  <a href="{% url 'technician_job_detail' job.id %}" class="btn btn-secondary btn-sm">Details</a>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="empty-state">
+        <i class="fa-solid fa-clock-rotate-left empty-state-icon"></i>
+        <h3>No Completed Jobs Yet</h3>
+        <p>Jobs you complete will be permanently archived here with receipt details.</p>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

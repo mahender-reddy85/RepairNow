@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+
+{% block title %}All Repair Services — RepairNow{% endblock %}
+
+{% block content %}
+<div class="container">
+
+  <div class="page-header">
+    <div class="breadcrumbs">
+      <a href="{% url 'home' %}">Home</a>
+      <span class="separator">/</span>
+      <span class="current">Services</span>
+    </div>
+    <h2>All Repair Services</h2>
+    <p>Select any category to book a certified technician or submit a repair request.</p>
+  </div>
+
+  <div class="category-grid">
+    {% for category in categories %}
+      <a href="{% url 'customer_repair_create' %}?category={{ category.id }}"
+         class="category-card"
+         style="text-align: left; padding: 1.5rem;">
+        <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+          <div class="category-icon" style="margin: 0; position: relative; flex-shrink: 0;">
+            <i class="fa-solid {{ category.icon|default:'fa-wrench' }}"></i>
+            <span style="position: absolute; top: -6px; right: -6px; background: var(--primary); color: #fff; font-size: 0.7rem; font-weight: 700; min-width: 20px; height: 20px; border-radius: 999px; display: flex; align-items: center; justify-content: center; padding: 0 4px; line-height: 1; box-shadow: 0 1px 4px rgba(0,0,0,0.18);">{{ category.technician_skills.count }}</span>
+          </div>
+          <h3 style="font-size: 1.15rem; margin-bottom: 0;">{{ category.name }}</h3>
+        </div>
+        <p style="font-size: 0.9rem; color: var(--gray-600); margin-bottom: 0;">
+          {{ category.description|default:"Professional repair and maintenance services by certified experts." }}
+        </p>
+      </a>
+    {% empty %}
+      <div class="card" style="grid-column: 1 / -1; text-align: center; padding: 3rem;">
+        <i class="fa-solid fa-wrench" style="font-size: 2.5rem; color: var(--gray-400); margin-bottom: 1rem;"></i>
+        <h3>No service categories yet</h3>
+        <p>Check back soon — we are onboarding repair specialists across all categories.</p>
+        <a href="{% url 'home' %}" class="btn btn-secondary" style="display: inline-flex;">Back to Home</a>
+      </div>
+    {% endfor %}
+  </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+
+{% block title %}Manage Service Categories — Admin Portal{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <div class="breadcrumbs">
+      <a href="{% url 'admin_dashboard' %}">Dashboard</a>
+      <span class="separator">/</span>
+      <span class="current">Services</span>
+    </div>
+    <h2>Manage Service Categories</h2>
+    <p style="margin: 0;">Add, update, and activate or deactivate repair service categories offered on RepairNow.</p>
+  </div>
+
+  <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 2rem; align-items: start;">
+
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title"><i class="fa-solid fa-list"></i> Configured Categories ({{ categories.count }})</h3>
+      </div>
+      <div class="table-responsive">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Icon</th>
+              <th>Category Name</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for cat in categories %}
+              <tr>
+                <td>
+                  <div class="category-icon" style="width: 38px; height: 38px; font-size: 1rem; margin: 0;">
+                    <i class="fa-solid {{ cat.icon|default:'fa-wrench' }}"></i>
+                  </div>
+                </td>
+                <td>
+                  <strong>{{ cat.name }}</strong>
+                  <div style="font-size: 0.8rem; color: var(--gray-500);">{{ cat.description|truncatewords:8 }}</div>
+                </td>
+                <td>
+                  {% if cat.is_active %}
+                    <span class="badge badge-success">Active</span>
+                  {% else %}
+                    <span class="badge badge-danger">Inactive</span>
+                  {% endif %}
+                </td>
+                <td>
+                  <form method="post" style="display: inline;">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="toggle">
+                    <input type="hidden" name="category_id" value="{{ cat.id }}">
+                    <button type="submit" class="btn btn-sm {% if cat.is_active %}btn-danger{% else %}btn-success{% endif %}">
+                      {% if cat.is_active %}Deactivate{% else %}Activate{% endif %}
+                    </button>
+                  </form>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title"><i class="fa-solid fa-plus-circle"></i> Add New Category</h3>
+      </div>
+      <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="create">
+
+        <div class="form-group">
+          <label class="form-label">Category Name *</label>
+          <input type="text" name="name" class="form-control" placeholder="e.g. Solar Inverter Repair" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">FontAwesome Icon Class</label>
+          <input type="text" name="icon" class="form-control" value="fa-wrench" placeholder="e.g. fa-solar-panel">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Description</label>
+          <textarea name="description" rows="3" class="form-control" placeholder="Brief service details..."></textarea>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block">
+          <i class="fa-solid fa-plus"></i> Save New Category
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

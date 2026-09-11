@@ -1,0 +1,71 @@
+import django.db.models.deletion
+from django.conf import settings
+from django.db import migrations, models
+
+
+class Migration(migrations.Migration):
+
+    initial = True
+
+    dependencies = [
+        ('services', '0001_initial'),
+        migrations.swappable_dependency(settings.AUTH_USER_MODEL),
+    ]
+
+    operations = [
+        migrations.CreateModel(
+            name='TechnicianProfile',
+            fields=[
+                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('full_name', models.CharField(max_length=150)),
+                ('phone', models.CharField(max_length=20)),
+                ('profile_image', models.ImageField(blank=True, null=True, upload_to='technicians/')),
+                ('bio', models.TextField(blank=True)),
+                ('experience', models.PositiveIntegerField(default=2, help_text='Years of professional repair experience')),
+                ('service_area', models.CharField(default='Vijayawada Metro', help_text='Operational zones or coverage areas', max_length=255)),
+                ('address', models.TextField(blank=True)),
+                ('city', models.CharField(default='Vijayawada', max_length=100)),
+                ('state', models.CharField(default='Andhra Pradesh', max_length=100)),
+                ('postal_code', models.CharField(blank=True, max_length=20)),
+                ('latitude', models.FloatField(blank=True, null=True)),
+                ('longitude', models.FloatField(blank=True, null=True)),
+                ('estimated_cost_min', models.DecimalField(decimal_places=2, default=300.0, max_digits=10)),
+                ('estimated_cost_max', models.DecimalField(decimal_places=2, default=800.0, max_digits=10)),
+                ('verification_status', models.CharField(choices=[('PENDING', 'Pending Verification'), ('VERIFIED', 'Verified'), ('REJECTED', 'Rejected'), ('SUSPENDED', 'Suspended')], default='PENDING', max_length=20)),
+                ('verification_document', models.FileField(blank=True, null=True, upload_to='verification_docs/')),
+                ('availability_status', models.CharField(choices=[('AVAILABLE', 'Available'), ('BUSY', 'Busy'), ('OFFLINE', 'Offline')], default='AVAILABLE', max_length=20)),
+                ('average_rating', models.FloatField(default=0.0)),
+                ('total_reviews_count', models.PositiveIntegerField(default=0)),
+                ('total_completed_jobs', models.PositiveIntegerField(default=0)),
+                ('created_at', models.DateTimeField(auto_now_add=True)),
+                ('user', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='technician_profile', to=settings.AUTH_USER_MODEL)),
+            ],
+        ),
+        migrations.CreateModel(
+            name='Availability',
+            fields=[
+                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('day_of_week', models.IntegerField(choices=[(0, 'Monday'), (1, 'Tuesday'), (2, 'Wednesday'), (3, 'Thursday'), (4, 'Friday'), (5, 'Saturday'), (6, 'Sunday')])),
+                ('start_time', models.TimeField(default='09:00')),
+                ('end_time', models.TimeField(default='18:00')),
+                ('is_available', models.BooleanField(default=True)),
+                ('technician', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='availability_schedule', to='technicians.technicianprofile')),
+            ],
+            options={
+                'ordering': ['day_of_week'],
+                'unique_together': {('technician', 'day_of_week')},
+            },
+        ),
+        migrations.CreateModel(
+            name='TechnicianSkill',
+            fields=[
+                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('created_at', models.DateTimeField(auto_now_add=True)),
+                ('service_category', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='technician_skills', to='services.servicecategory')),
+                ('technician', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='skills', to='technicians.technicianprofile')),
+            ],
+            options={
+                'unique_together': {('technician', 'service_category')},
+            },
+        ),
+    ]

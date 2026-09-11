@@ -1,0 +1,252 @@
+{% extends 'base.html' %}
+
+{% block title %}Track Repair #{{ repair_request.id }} — RepairNow{% endblock %}
+
+{% block content %}
+<div class="container" id="tracking-container" data-request-id="{{ repair_request.id }}">
+
+  <div style="margin-bottom: 1.5rem;">
+    <a href="{% url 'customer_dashboard' %}" class="btn btn-secondary btn-sm">
+      <i class="fa-solid fa-arrow-left"></i> Back to Dashboard
+    </a>
+  </div>
+
+  <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 2rem; align-items: start;">
+
+    <div>
+      <div class="card" style="margin-bottom: 1.5rem;">
+        <div class="card-header">
+          <div>
+            <span class="badge badge-urgency-{{ repair_request.urgency|lower }}" style="margin-bottom: 0.35rem;">
+              {{ repair_request.get_urgency_display }}
+            </span>
+            <h2>Repair #{{ repair_request.id }}: {{ repair_request.device_name }}</h2>
+            <div style="font-size: 0.88rem; color: var(--gray-500);">
+              Created on {{ repair_request.created_at|date:"M d, Y h:i A" }} &bull; Category: {{ repair_request.service_category.name }}
+            </div>
+          </div>
+
+          <span class="badge badge-{{ repair_request.status|lower }}" id="live-status-badge" style="font-size: 0.95rem; padding: 0.4rem 0.85rem;">
+            {{ repair_request.get_status_display }}
+          </span>
+        </div>
+
+        <div style="margin: 1rem 0; padding: 1rem; background: var(--gray-50); border-radius: var(--radius-md); border: 1px solid var(--gray-200);">
+          <h4 style="margin-bottom: 0.35rem; color: var(--gray-800);">Problem Details</h4>
+          <p style="margin-bottom: 0.5rem; color: var(--gray-700);">{{ repair_request.problem_description }}</p>
+          <div style="font-size: 0.85rem; color: var(--gray-500);">
+            <i class="fa-solid fa-location-dot"></i> {{ repair_request.location }}, {{ repair_request.city }} &bull; 
+            <i class="fa-regular fa-clock"></i> Preferred: {{ repair_request.preferred_date|date:"M d, Y" }} ({{ repair_request.preferred_time }})
+          </div>
+          {% if repair_request.problem_image %}
+            <div style="margin-top: 0.75rem;">
+              <a href="{{ repair_request.problem_image.url }}" target="_blank" class="btn btn-secondary btn-sm">
+                <i class="fa-regular fa-image"></i> View Uploaded Image
+              </a>
+            </div>
+          {% endif %}
+        </div>
+
+        <div class="stepper-container">
+          <h3 style="margin-bottom: 1.5rem; font-size: 1.15rem;">Live Progression Status</h3>
+
+          <div class="stepper">
+
+            <div class="step-item {% if repair_request.status != 'PENDING' %}completed{% else %}active{% endif %}">
+              <div class="step-circle">
+                {% if repair_request.status != 'PENDING' %}<i class="fa-solid fa-check"></i>{% else %}1{% endif %}
+              </div>
+              <div class="step-title">Submitted</div>
+            </div>
+
+            <div class="step-item {% if repair_request.selected_technician and repair_request.status != 'TECHNICIAN_SELECTED' and repair_request.status != 'PENDING' and repair_request.status != 'MATCHING' %}completed{% elif repair_request.status == 'TECHNICIAN_SELECTED' %}active{% endif %}">
+              <div class="step-circle">
+                {% if repair_request.selected_technician and repair_request.status != 'TECHNICIAN_SELECTED' and repair_request.status != 'PENDING' and repair_request.status != 'MATCHING' %}<i class="fa-solid fa-check"></i>{% else %}2{% endif %}
+              </div>
+              <div class="step-title">Technician Selected</div>
+            </div>
+
+            <div class="step-item {% if repair_request.status == 'ON_THE_WAY' or repair_request.status == 'ARRIVED' or repair_request.status == 'IN_PROGRESS' or repair_request.status == 'COMPLETED' %}completed{% elif repair_request.status == 'ACCEPTED' %}active{% endif %}">
+              <div class="step-circle">
+                {% if repair_request.status == 'ON_THE_WAY' or repair_request.status == 'ARRIVED' or repair_request.status == 'IN_PROGRESS' or repair_request.status == 'COMPLETED' %}<i class="fa-solid fa-check"></i>{% else %}3{% endif %}
+              </div>
+              <div class="step-title">Accepted</div>
+            </div>
+
+            <div class="step-item {% if repair_request.status == 'ARRIVED' or repair_request.status == 'IN_PROGRESS' or repair_request.status == 'COMPLETED' %}completed{% elif repair_request.status == 'ON_THE_WAY' %}active{% endif %}">
+              <div class="step-circle">
+                {% if repair_request.status == 'ARRIVED' or repair_request.status == 'IN_PROGRESS' or repair_request.status == 'COMPLETED' %}<i class="fa-solid fa-check"></i>{% else %}4{% endif %}
+              </div>
+              <div class="step-title">On The Way</div>
+            </div>
+
+            <div class="step-item {% if repair_request.status == 'IN_PROGRESS' or repair_request.status == 'COMPLETED' %}completed{% elif repair_request.status == 'ARRIVED' %}active{% endif %}">
+              <div class="step-circle">
+                {% if repair_request.status == 'IN_PROGRESS' or repair_request.status == 'COMPLETED' %}<i class="fa-solid fa-check"></i>{% else %}5{% endif %}
+              </div>
+              <div class="step-title">Arrived</div>
+            </div>
+
+            <div class="step-item {% if repair_request.status == 'COMPLETED' %}completed{% elif repair_request.status == 'IN_PROGRESS' %}active{% endif %}">
+              <div class="step-circle">
+                {% if repair_request.status == 'COMPLETED' %}<i class="fa-solid fa-check"></i>{% else %}6{% endif %}
+              </div>
+              <div class="step-title">In Progress</div>
+            </div>
+
+            <div class="step-item {% if repair_request.status == 'COMPLETED' %}completed{% endif %}">
+              <div class="step-circle">
+                {% if repair_request.status == 'COMPLETED' %}<i class="fa-solid fa-check"></i>{% else %}7{% endif %}
+              </div>
+              <div class="step-title">Completed</div>
+            </div>
+          </div>
+        </div>
+
+        {% if repair_request.status == 'COMPLETED' %}
+          <div style="background: var(--success-light); border: 1px solid #a7f3d0; border-radius: var(--radius-md); padding: 1.5rem; margin-top: 1.5rem; text-align: center;">
+            <i class="fa-solid fa-circle-check" style="font-size: 2rem; color: var(--success); margin-bottom: 0.5rem;"></i>
+            <h3 style="color: #065f46;">Repair Completed Successfully!</h3>
+            {% if job.final_cost %}
+              <p style="font-size: 1.1rem; color: var(--gray-700); margin-bottom: 1rem;">
+                Final Billable Cost: <strong>₹{{ job.final_cost }}</strong>
+              </p>
+            {% endif %}
+
+            {% if review %}
+              <div style="background: #ffffff; padding: 1rem; border-radius: var(--radius-sm); display: inline-block; text-align: left; margin-top: 0.5rem;">
+                <div style="font-weight: 600; margin-bottom: 0.25rem;">Your Review:</div>
+                <div class="star-rating" style="margin-bottom: 0.25rem;">
+                  {% for i in "12345" %}
+                    {% if forloop.counter <= review.rating %}<i class="fa-solid fa-star"></i>{% else %}<i class="fa-regular fa-star"></i>{% endif %}
+                  {% endfor %}
+                </div>
+                <p style="margin: 0; font-size: 0.9rem; color: var(--gray-600);">"{{ review.comment }}"</p>
+              </div>
+            {% else %}
+              <a href="{% url 'submit_review' job.id %}" class="btn btn-primary btn-lg" style="margin-top: 0.5rem;">
+                <i class="fa-solid fa-star"></i> Submit Rating &amp; Review
+              </a>
+            {% endif %}
+          </div>
+        {% endif %}
+
+        {% if repair_request.can_be_cancelled %}
+          <div style="margin-top: 2rem; border-top: 1px solid var(--gray-200); padding-top: 1rem; display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 0.88rem; color: var(--gray-500);">Need to change your plans?</span>
+            <a href="{% url 'customer_repair_cancel' repair_request.id %}" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to cancel this repair request?');">
+              <i class="fa-solid fa-ban"></i> Cancel Request
+            </a>
+          </div>
+        {% endif %}
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title"><i class="fa-solid fa-timeline"></i> Status Transition History</h3>
+        </div>
+        {% if history %}
+          <ul style="list-style: none; padding-left: 0;">
+            {% for item in history %}
+              <li style="display: flex; gap: 1rem; margin-bottom: 1rem; position: relative;">
+                <div style="width: 28px; height: 28px; border-radius: 50%; background: var(--primary-light); color: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 0.8rem;">
+                  <i class="fa-solid fa-check"></i>
+                </div>
+                <div>
+                  <div style="font-weight: 600; color: var(--gray-800); font-size: 0.95rem;">
+                    Status updated to: <span class="badge badge-info">{{ item.status }}</span>
+                  </div>
+                  <div style="font-size: 0.8rem; color: var(--gray-500);">
+                    {{ item.timestamp|date:"M d, Y h:i A" }} {% if item.changed_by %}by {{ item.changed_by.username }}{% endif %}
+                  </div>
+                  {% if item.note %}
+                    <div style="font-size: 0.85rem; color: var(--gray-600); margin-top: 0.25rem;">
+                      Note: {{ item.note }}
+                    </div>
+                  {% endif %}
+                </div>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p style="color: var(--gray-500); margin: 0;">No status events recorded yet. Updates will appear here as the job progresses.</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <div>
+      {% if repair_request.selected_technician %}
+        {% with tech=repair_request.selected_technician %}
+          <div class="card" style="margin-bottom: 1.5rem;">
+            <div class="card-header">
+              <h3 class="card-title"><i class="fa-solid fa-user-check"></i> Assigned Technician</h3>
+            </div>
+
+            <div style="text-align: center; margin-bottom: 1.25rem;">
+              {% if tech.profile_image %}
+                <img src="{{ tech.profile_image.url }}" alt="{{ tech.full_name }}" class="tech-avatar" style="margin: 0 auto 0.75rem;">
+              {% else %}
+                <div class="tech-avatar" style="margin: 0 auto 0.75rem;"><i class="fa-solid fa-user-tie"></i></div>
+              {% endif %}
+
+              <h3 style="margin-bottom: 0.25rem;">{{ tech.full_name }}</h3>
+              {% if tech.is_verified %}
+                <span class="badge badge-verified"><i class="fa-solid fa-check-circle"></i> Verified Expert</span>
+              {% endif %}
+
+              <div class="star-rating" style="justify-content: center; margin-top: 0.5rem;">
+                <i class="fa-solid fa-star"></i> <strong>{{ tech.average_rating|floatformat:1 }}</strong>
+                <span style="color: var(--gray-500); font-size: 0.85rem;">({{ tech.total_reviews_count }} reviews)</span>
+              </div>
+            </div>
+
+            <div style="border-top: 1px solid var(--gray-200); padding-top: 1rem; font-size: 0.9rem;">
+              <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                <span style="color: var(--gray-500);">Contact Phone:</span>
+                <strong><i class="fa-solid fa-phone" style="color: var(--primary);"></i> {{ tech.phone }}</strong>
+              </div>
+              <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                <span style="color: var(--gray-500);">Experience:</span>
+                <strong>{{ tech.experience }} Years</strong>
+              </div>
+              <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                <span style="color: var(--gray-500);">Service Area:</span>
+                <strong>{{ tech.service_area }}</strong>
+              </div>
+              <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                <span style="color: var(--gray-500);">Estimated Labor:</span>
+                <strong>₹{{ tech.estimated_cost_min|floatformat:0 }} – ₹{{ tech.estimated_cost_max|floatformat:0 }}</strong>
+              </div>
+            </div>
+          </div>
+        {% endwith %}
+      {% else %}
+        <div class="card" style="margin-bottom: 1.5rem; text-align: center;">
+          <i class="fa-solid fa-user-clock" style="font-size: 2rem; color: var(--warning); margin-bottom: 0.5rem;"></i>
+          <h4>Technician Not Selected</h4>
+          <p style="font-size: 0.88rem;">Select a recommended technician to initiate your repair job.</p>
+          <a href="{% url 'customer_repair_matches' repair_request.id %}" class="btn btn-primary btn-sm btn-block">
+            <i class="fa-solid fa-users"></i> View Ranked Matches
+          </a>
+        </div>
+      {% endif %}
+
+      <div class="card">
+        <h4 style="margin-bottom: 0.5rem;"><i class="fa-regular fa-circle-question" style="color: var(--primary);"></i> Need Help?</h4>
+        <p style="font-size: 0.88rem; color: var(--gray-600); margin-bottom: 1rem;">
+          If you have any questions, disputes, or issues with your technician, reach out to our platform support team.
+        </p>
+        {% if job %}
+          <a href="{% url 'submit_complaint_job' job.id %}" class="btn btn-secondary btn-sm btn-block">
+            <i class="fa-regular fa-flag"></i> Raise a Complaint
+          </a>
+        {% else %}
+          <a href="{% url 'submit_complaint' %}" class="btn btn-secondary btn-sm btn-block">
+            <i class="fa-regular fa-flag"></i> Contact Support
+          </a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

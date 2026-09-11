@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+
+{% block title %}Server Error — RepairNow{% endblock %}
+
+{% block content %}
+<div class="container container-sm" style="text-align: center; padding: 4rem 1.5rem;">
+  <div class="card" style="padding: 3rem 2rem;">
+    <div style="font-size: 3.5rem; color: var(--warning); font-weight: 800; margin-bottom: 0.5rem;">500</div>
+    <h2>Internal Server Error</h2>
+    <p>Something unexpected occurred while processing your repair request. Our team has been alerted.</p>
+    <div style="margin-top: 1.5rem;">
+      <a href="{% url 'home' %}" class="btn btn-primary">Return to Home</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

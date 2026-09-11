@@ -1,0 +1,102 @@
+{% extends 'base.html' %}
+
+{% block title %}Manage Complaints — Admin Portal{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <div class="breadcrumbs">
+      <a href="{% url 'admin_dashboard' %}">Dashboard</a>
+      <span class="separator">/</span>
+      <span class="current">Complaints</span>
+    </div>
+    <h2>User Inquiries &amp; Complaints</h2>
+    <p style="margin: 0;">Investigate reported issues, respond to users, and update resolution statuses.</p>
+  </div>
+
+  <div class="card">
+    {% if complaints %}
+      <div class="table-responsive">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>User</th>
+              <th>Subject</th>
+              <th>Related Repair</th>
+              <th>Status</th>
+              <th>Admin Response</th>
+              <th>Date</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for c in complaints %}
+              <tr>
+                <td>#{{ c.id }}</td>
+                <td><strong>{{ c.user.username }}</strong></td>
+                <td>
+                  <strong>{{ c.subject }}</strong>
+                  <div style="font-size: 0.85rem; color: var(--gray-600); margin-top: 0.25rem;">
+                    {{ c.description }}
+                  </div>
+                </td>
+                <td>
+                  {% if c.job %}
+                    #{{ c.job.repair_request.id }} ({{ c.job.repair_request.device_name }})
+                  {% else %}
+                    —
+                  {% endif %}
+                </td>
+                <td>
+                  <span class="badge {% if c.status == 'RESOLVED' %}badge-success{% elif c.status == 'OPEN' %}badge-danger{% else %}badge-warning{% endif %}">
+                    {{ c.get_status_display }}
+                  </span>
+                </td>
+                <td>
+                  {{ c.admin_response|default:"<span style='color: var(--gray-400);'>None</span>"|safe }}
+                </td>
+                <td>{{ c.created_at|date:"M d, Y" }}</td>
+                <td>
+                  <details style="position: relative;">
+                    <summary class="btn btn-secondary btn-sm" style="list-style: none; cursor: pointer;">Respond</summary>
+                    <div style="position: absolute; right: 0; z-index: 10; background: #ffffff; border: 1px solid var(--gray-300); border-radius: var(--radius-md); box-shadow: var(--shadow-lg); padding: 1.25rem; width: 300px; margin-top: 0.5rem;">
+                      <form method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="complaint_id" value="{{ c.id }}">
+
+                        <div class="form-group">
+                          <label class="form-label">Status</label>
+                          <select name="status" class="form-select">
+                            <option value="OPEN" {% if c.status == 'OPEN' %}selected{% endif %}>Open</option>
+                            <option value="IN_REVIEW" {% if c.status == 'IN_REVIEW' %}selected{% endif %}>In Review</option>
+                            <option value="RESOLVED" {% if c.status == 'RESOLVED' %}selected{% endif %}>Resolved</option>
+                            <option value="REJECTED" {% if c.status == 'REJECTED' %}selected{% endif %}>Rejected</option>
+                          </select>
+                        </div>
+
+                        <div class="form-group">
+                          <label class="form-label">Admin Response Note</label>
+                          <textarea name="admin_response" rows="3" class="form-control" placeholder="Reply to user...">{{ c.admin_response }}</textarea>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary btn-sm btn-block">Save Response</button>
+                      </form>
+                    </div>
+                  </details>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div style="text-align: center; padding: 3rem;">
+        <i class="fa-regular fa-circle-check" style="font-size: 2.5rem; color: var(--success); margin-bottom: 1rem;"></i>
+        <h3>No Complaints Logged</h3>
+        <p>There are no customer or technician complaints on record.</p>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

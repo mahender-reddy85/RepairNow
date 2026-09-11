@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+
+{% block title %}My Repair Requests — RepairNow{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <div class="breadcrumbs">
+      <a href="{% url 'customer_dashboard' %}">Dashboard</a>
+      <span class="separator">/</span>
+      <span class="current">My Repairs</span>
+    </div>
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+      <h2>My Repair Requests</h2>
+      <a href="{% url 'customer_repair_create' %}" class="btn btn-primary">
+        <i class="fa-solid fa-plus-circle"></i> New Repair Request
+      </a>
+    </div>
+    <p style="margin: 0;">Overview of all your submitted repair requests and active repairs.</p>
+  </div>
+
+  <div class="card">
+    {% if requests %}
+      <div class="table-responsive">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Device / Equipment</th>
+              <th>Category</th>
+              <th>Urgency</th>
+              <th>Technician</th>
+              <th>Status</th>
+              <th>Preferred Date</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for req in requests %}
+              <tr>
+                <td><strong>#{{ req.id }}</strong></td>
+                <td><strong>{{ req.device_name }}</strong></td>
+                <td>{{ req.service_category.name }}</td>
+                <td><span class="badge badge-urgency-{{ req.urgency|lower }}">{{ req.get_urgency_display|truncatewords:2 }}</span></td>
+                <td>
+                  {% if req.selected_technician %}
+                    {{ req.selected_technician.full_name }}
+                  {% else %}
+                    <span style="color: var(--gray-400); font-style: italic;">Not Selected</span>
+                  {% endif %}
+                </td>
+                <td><span class="badge badge-{{ req.status|lower }}">{{ req.get_status_display }}</span></td>
+                <td>{{ req.preferred_date|date:"M d, Y" }}</td>
+                <td>
+                  <div style="display: flex; gap: 0.35rem;">
+                    {% if not req.selected_technician %}
+                      <a href="{% url 'customer_repair_matches' req.id %}" class="btn btn-primary btn-sm">Matches</a>
+                    {% else %}
+                      <a href="{% url 'customer_repair_track' req.id %}" class="btn btn-outline-primary btn-sm">Track</a>
+                    {% endif %}
+                    <a href="{% url 'customer_repair_detail' req.id %}" class="btn btn-secondary btn-sm">Details</a>
+                  </div>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div style="text-align: center; padding: 3rem;">
+        <i class="fa-solid fa-clipboard-list" style="font-size: 2.5rem; color: var(--gray-400); margin-bottom: 1rem;"></i>
+        <h3>No Repair Requests Found</h3>
+        <p>You haven't submitted any repair requests yet.</p>
+        <a href="{% url 'customer_repair_create' %}" class="btn btn-primary">Book a Repair Now</a>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

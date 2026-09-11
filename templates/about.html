@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+
+{% block title %}About Us — RepairNow{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <div class="breadcrumbs">
+      <a href="{% url 'home' %}">Home</a>
+      <span class="separator">/</span>
+      <span class="current">About</span>
+    </div>
+    <h2>About RepairNow</h2>
+  </div>
+
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+    <div class="card" style="padding: 2rem;">
+      <span class="badge badge-info" style="margin-bottom: 0.75rem;">Our Mission</span>
+      <p style="font-size: 1.1rem; color: var(--gray-700); margin-bottom: 1.5rem;">
+        <strong>"Find the Right Technician. Fix It Fast."</strong>
+      </p>
+
+      <p>RepairNow was created to eliminate the frustration of finding trustworthy, capable technicians for home appliances, electrical devices, computing equipment, and vehicle repairs. By connecting customers with verified local technicians through a transparent 5-factor matching engine, we guarantee reliable service without guesswork.</p>
+
+      <div style="margin-top: 2rem;">
+        <a href="{% url 'customer_repair_create' %}" class="btn btn-primary">Book a Repair</a>
+      </div>
+    </div>
+
+    <div class="card" style="padding: 2rem;">
+      <h3 style="margin-bottom: 1rem;">Our Core Pillars</h3>
+      <ul style="padding-left: 1.25rem; margin-bottom: 1.5rem; color: var(--gray-700);">
+        <li style="margin-bottom: 0.75rem;"><strong>Rigorous Verification:</strong> Technicians must submit proof of experience, trade certifications, and location documents before getting approved.</li>
+        <li style="margin-bottom: 0.75rem;"><strong>Rule-Based Fair Matching:</strong> We match technicians based on skill compatibility (35%), availability (20%), geographic proximity (20%), proven rating (15%), and budget match (10%).</li>
+        <li style="margin-bottom: 0.75rem;"><strong>Live Status Progression:</strong> Complete tracking from the moment a technician is selected, on the way, arrived, repairing, and completed.</li>
+        <li style="margin-bottom: 0.75rem;"><strong>Genuine Feedback:</strong> Customers can only leave ratings on completed jobs, keeping service accountability at its highest.</li>
+      </ul>
+
+      <div style="margin-top: 2rem;">
+        <a href="{% url 'register_technician' %}" class="btn btn-outline-primary">Join our Technician Network</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,137 @@
+{% extends 'base.html' %}
+
+{% block title %}Matching Technicians — RepairNow{% endblock %}
+
+{% block content %}
+<div class="container">
+
+  <div class="card" style="margin-bottom: 2rem; background: linear-gradient(to right, #ffffff, var(--gray-50));">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+      <div>
+        <span class="badge badge-urgency-{{ repair_request.urgency|lower }}" style="margin-bottom: 0.5rem;">
+          {{ repair_request.get_urgency_display }}
+        </span>
+        <h2>Matching Technicians for #{{ repair_request.id }}: {{ repair_request.device_name }}</h2>
+        <p style="margin: 0; color: var(--gray-600);">
+          <i class="fa-solid fa-location-dot"></i> {{ repair_request.location }}, {{ repair_request.city }} &bull;
+          <i class="fa-regular fa-calendar"></i> {{ repair_request.preferred_date|date:"M d, Y" }} ({{ repair_request.preferred_time }}) &bull;
+          {% if repair_request.budget %}<strong>Budget: ₹{{ repair_request.budget }}</strong>{% else %}Open Budget{% endif %}
+        </p>
+      </div>
+
+      <div>
+        <span class="badge badge-info" style="font-size: 0.95rem; padding: 0.5rem 1rem;">
+          <i class="fa-solid fa-calculator"></i> {{ total_count }} Qualified Technicians Ranked
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom: 1.5rem; padding: 1rem 1.5rem;">
+    <form method="get" style="display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; justify-content: space-between;">
+      <div style="display: flex; flex-wrap: wrap; gap: 1rem; align-items: center;">
+        <label style="font-size: 0.9rem; font-weight: 600; color: var(--gray-700);">
+          <i class="fa-solid fa-filter"></i> Filter Results:
+        </label>
+
+        <select name="rating" class="form-select" style="width: auto; padding: 0.4rem 0.8rem; font-size: 0.88rem;">
+          <option value="">All Ratings</option>
+          <option value="4.5" {% if request.GET.rating == '4.5' %}selected{% endif %}>4.5+ Stars</option>
+          <option value="4.0" {% if request.GET.rating == '4.0' %}selected{% endif %}>4.0+ Stars</option>
+          <option value="3.5" {% if request.GET.rating == '3.5' %}selected{% endif %}>3.5+ Stars</option>
+        </select>
+
+        <select name="available_only" class="form-select" style="width: auto; padding: 0.4rem 0.8rem; font-size: 0.88rem;">
+          <option value="">Any Availability</option>
+          <option value="1" {% if request.GET.available_only == '1' %}selected{% endif %}>Available Now Only</option>
+        </select>
+
+        <input type="number" name="max_cost" value="{{ request.GET.max_cost }}" placeholder="Max Cost (₹)" class="form-control" style="width: 140px; padding: 0.4rem 0.8rem; font-size: 0.88rem;">
+
+        <button type="submit" class="btn btn-secondary btn-sm">Apply Filters</button>
+        {% if request.GET.rating or request.GET.available_only or request.GET.max_cost %}
+          <a href="{% url 'customer_repair_matches' repair_request.id %}" class="btn btn-sm" style="color: var(--danger);">Reset</a>
+        {% endif %}
+      </div>
+
+      <div style="font-size: 0.85rem; color: var(--gray-500);">
+        <i class="fa-solid fa-circle-info"></i> Ranked by: Skill (35%) + Availability (20%) + Distance (20%) + Rating (15%) + Cost (10%)
+      </div>
+    </form>
+  </div>
+
+  {% if matches %}
+    <div class="matches-list">
+      {% for match in matches %}
+        {% with tech=match.technician %}
+          <div class="tech-card">
+
+            <div>
+              {% if tech.profile_image %}
+                <img src="{{ tech.profile_image.url }}" alt="{{ tech.full_name }}" class="tech-avatar">
+              {% else %}
+                <div class="tech-avatar"><i class="fa-solid fa-user-tie"></i></div>
+              {% endif %}
+            </div>
+
+            <div>
+              <div class="tech-name">
+                {{ tech.full_name }}
+                {% if tech.is_verified %}
+                  <span class="badge badge-verified"><i class="fa-solid fa-circle-check"></i> Verified Technician</span>
+                {% endif %}
+                <span class="badge badge-{{ tech.availability_status|lower }}" style="margin-left: 0.5rem;">
+                  {{ tech.get_availability_status_display }}
+                </span>
+              </div>
+
+              <div style="display: flex; align-items: center; gap: 1rem; margin-top: 0.35rem; font-size: 0.92rem;">
+                <span class="star-rating">
+                  <i class="fa-solid fa-star"></i> <strong>{{ tech.average_rating|floatformat:1 }}</strong>
+                  <span style="color: var(--gray-500); font-size: 0.82rem;">({{ tech.total_reviews_count }} reviews)</span>
+                </span>
+                <span style="color: var(--gray-400);">&bull;</span>
+                <span><strong>{{ tech.experience }}</strong> Years Experience</span>
+                <span style="color: var(--gray-400);">&bull;</span>
+                <span style="color: var(--gray-600);"><i class="fa-solid fa-check-double" style="color: var(--success);"></i> {{ tech.total_completed_jobs }} completed jobs</span>
+              </div>
+
+              <div class="tech-skills-pills">
+                {% for ts in tech.skills.all %}
+                  <span class="skill-pill">{{ ts.service_category.name }}</span>
+                {% endfor %}
+              </div>
+
+              <div class="tech-meta-row">
+                <span><i class="fa-solid fa-location-arrow" style="color: var(--primary);"></i> <strong>{{ match.distance|floatformat:1 }} km</strong> away ({{ tech.service_area }})</span>
+                <span style="color: var(--gray-400);">&bull;</span>
+                <span><i class="fa-solid fa-tags" style="color: var(--success);"></i> Estimated Cost: <strong>₹{{ tech.estimated_cost_min|floatformat:0 }} – ₹{{ tech.estimated_cost_max|floatformat:0 }}</strong></span>
+              </div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 0.85rem;">
+              <div class="match-score-badge">
+                <div class="match-score-num">{{ match.match_score|floatformat:0 }}%</div>
+                <div class="match-score-label">Match Score</div>
+              </div>
+
+              <div style="display: flex; gap: 0.5rem; width: 100%;">
+                <a href="{% url 'customer_select_technician' repair_request.id tech.id %}" class="btn btn-primary btn-sm btn-block" onclick="return confirm('Confirm selection of {{ tech.full_name }} for this repair?');">
+                  <i class="fa-solid fa-check"></i> Select Technician
+                </a>
+              </div>
+            </div>
+          </div>
+        {% endwith %}
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="card" style="text-align: center; padding: 3rem;">
+      <i class="fa-solid fa-user-slash" style="font-size: 2.5rem; color: var(--gray-400); margin-bottom: 1rem;"></i>
+      <h3>No matching technicians found</h3>
+      <p>We could not find any active verified technicians matching your exact criteria or filters.</p>
+      <a href="{% url 'customer_repair_matches' repair_request.id %}" class="btn btn-secondary">Clear Filters</a>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

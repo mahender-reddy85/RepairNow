@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+
+{% block title %}Raise Complaint / Contact Support — RepairNow{% endblock %}
+
+{% block content %}
+<div class="container container-narrow">
+  <div class="card" style="padding: 2.5rem;">
+    <div style="margin-bottom: 2rem; border-bottom: 1px solid var(--gray-200); padding-bottom: 1rem;">
+      <span class="badge badge-warning" style="margin-bottom: 0.5rem;"><i class="fa-regular fa-flag"></i> Support &amp; Complaints</span>
+      <h2>Submit an Inquiry or Complaint</h2>
+      <p style="margin: 0;">Our administrative moderation team reviews all customer &amp; technician feedback to resolve disputes fairly.</p>
+    </div>
+
+    {% if job %}
+      <div style="background: var(--gray-50); border: 1px solid var(--gray-200); border-radius: var(--radius-md); padding: 1rem; margin-bottom: 1.5rem;">
+        <strong>Related Repair:</strong> #{{ job.repair_request.id }} — {{ job.repair_request.device_name }}
+        <div style="font-size: 0.85rem; color: var(--gray-600); margin-top: 0.25rem;">
+          Technician: {{ job.technician.full_name }} &bull; Customer: {{ job.customer.full_name }}
+        </div>
+      </div>
+    {% endif %}
+
+    <form method="post" novalidate>
+      {% csrf_token %}
+
+      <div class="form-group">
+        <label class="form-label" for="{{ form.subject.id_for_label }}">Subject *</label>
+        {{ form.subject }}
+        {% if form.subject.errors %}<div class="form-error">{{ form.subject.errors.0 }}</div>{% endif %}
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="{{ form.description.id_for_label }}">Detailed Explanation *</label>
+        {{ form.description }}
+        {% if form.description.errors %}<div class="form-error">{{ form.description.errors.0 }}</div>{% endif %}
+      </div>
+
+      <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+        <button type="submit" class="btn btn-primary">
+          <i class="fa-solid fa-paper-plane"></i> Submit to Admin Team
+        </button>
+        <a href="javascript:history.back()" class="btn btn-secondary">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

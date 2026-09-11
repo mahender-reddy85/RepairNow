@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+
+{% block title %}Repair History — RepairNow{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <div class="breadcrumbs">
+      <a href="{% url 'customer_dashboard' %}">Dashboard</a>
+      <span class="separator">/</span>
+      <span class="current">History</span>
+    </div>
+    <h2>Repair Service History</h2>
+    <p>Complete historical log of all repairs performed for your home or devices.</p>
+  </div>
+
+  <div class="card">
+    {% if jobs %}
+      <div class="table-responsive">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Job ID</th>
+              <th>Device</th>
+              <th>Technician</th>
+              <th>Completed Date</th>
+              <th>Final Cost</th>
+              <th>Status</th>
+              <th>Review / Rating</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for job in jobs %}
+              <tr>
+                <td><strong>#{{ job.id }}</strong></td>
+                <td>
+                  <strong>{{ job.repair_request.device_name }}</strong>
+                  <div style="font-size: 0.8rem; color: var(--gray-500);">{{ job.repair_request.service_category.name }}</div>
+                </td>
+                <td>{{ job.technician.full_name }}</td>
+                <td>{{ job.completed_date|date:"M d, Y"|default:"In Progress" }}</td>
+                <td><strong>{% if job.final_cost %}₹{{ job.final_cost }}{% else %}—{% endif %}</strong></td>
+                <td><span class="badge badge-{{ job.status|lower }}">{{ job.get_status_display }}</span></td>
+                <td>
+                  {% if job.review %}
+                    <span class="star-rating">
+                      {% for i in "12345" %}
+                        {% if forloop.counter <= job.review.rating %}<i class="fa-solid fa-star"></i>{% else %}<i class="fa-regular fa-star"></i>{% endif %}
+                      {% endfor %}
+                    </span>
+                    <span style="font-size: 0.82rem; color: var(--gray-600); margin-left: 0.25rem;">({{ job.review.rating }}/5)</span>
+                  {% elif job.status == 'COMPLETED' %}
+                    <a href="{% url 'submit_review' job.id %}" class="btn btn-primary btn-sm">
+                      <i class="fa-solid fa-star"></i> Leave Review
+                    </a>
+                  {% else %}
+                    <span style="color: var(--gray-400);">Pending completion</span>
+                  {% endif %}
+                </td>
+                <td>
+                  <a href="{% url 'customer_repair_track' job.repair_request.id %}" class="btn btn-secondary btn-sm">
+                    View
+                  </a>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="empty-state">
+        <i class="fa-solid fa-history empty-state-icon"></i>
+        <h3>No Repair History Yet</h3>
+        <p>Once you complete repairs, full receipt and service details will appear here.</p>
+        <a href="{% url 'customer_repair_create' %}" class="btn btn-primary">Book a Repair</a>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+
+{% block title %}Pending Technician Verifications — Admin Portal{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <div class="breadcrumbs">
+      <a href="{% url 'admin_dashboard' %}">Dashboard</a>
+      <span class="separator">/</span>
+      <span class="current">Verifications</span>
+    </div>
+    <h2>Pending Technician Verifications</h2>
+    <p style="margin: 0;">Carefully review trade credentials and background details before approving technicians onto the platform.</p>
+  </div>
+
+  <div class="card">
+    {% if technicians %}
+      <div class="table-responsive">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Technician</th>
+              <th>Phone</th>
+              <th>City / Area</th>
+              <th>Skills Offered</th>
+              <th>Exp</th>
+              <th>Proof Document</th>
+              <th>Decision</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for t in technicians %}
+              <tr>
+                <td>
+                  <strong>{{ t.full_name }}</strong>
+                  <div style="font-size: 0.8rem; color: var(--gray-500);">Registered: {{ t.created_at|date:"M d, Y" }}</div>
+                </td>
+                <td>{{ t.phone }}</td>
+                <td>{{ t.city }}<br><span style="font-size: 0.8rem; color: var(--gray-500);">{{ t.service_area }}</span></td>
+                <td>
+                  {% for s in t.skills.all %}
+                    <span class="skill-pill">{{ s.service_category.name }}</span>
+                  {% endfor %}
+                </td>
+                <td>{{ t.experience }} years</td>
+                <td>
+                  {% if t.verification_document %}
+                    <a href="{{ t.verification_document.url }}" target="_blank" class="btn btn-secondary btn-sm">
+                      <i class="fa-solid fa-file-arrow-down"></i> View Submitted Doc
+                    </a>
+                  {% else %}
+                    <span class="badge badge-warning">No Document</span>
+                  {% endif %}
+                </td>
+                <td>
+                  <div style="display: flex; gap: 0.5rem;">
+                    <a href="{% url 'admin_verify_technician' t.id 'approve' %}" class="btn btn-success btn-sm">
+                      <i class="fa-solid fa-check"></i> Approve
+                    </a>
+                    <a href="{% url 'admin_verify_technician' t.id 'reject' %}" class="btn btn-danger btn-sm" onclick="return confirm('Reject application from {{ t.full_name }}?');">
+                      <i class="fa-solid fa-xmark"></i> Reject
+                    </a>
+                  </div>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div style="text-align: center; padding: 3rem;">
+        <i class="fa-solid fa-circle-check" style="font-size: 2.5rem; color: var(--success); margin-bottom: 1rem;"></i>
+        <h3>Queue is Clean!</h3>
+        <p>No technician applications currently waiting for review.</p>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

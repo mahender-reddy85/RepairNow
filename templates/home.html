@@ -1,0 +1,187 @@
+{% extends 'base.html' %}
+
+{% block title %}RepairNow — Find the Right Technician. Fix It Fast.{% endblock %}
+
+{% block content %}
+<div class="container">
+
+  <section class="hero">
+    <div class="hero-content">
+      <h1>Need a Repair?</h1>
+      <h2>Find the Right Technician. Fix It Fast.</h2>
+      <p>Reliable, verified local repair technicians when you need them. Transparent estimated prices, instant rule-based matching, and real-time repair tracking.</p>
+      <div class="hero-actions">
+        <a href="{% url 'customer_repair_create' %}" class="btn btn-primary btn-lg">
+          <i class="fa-solid fa-screwdriver-wrench"></i> Find a Technician
+        </a>
+        <a href="{% url 'register_technician' %}" class="btn btn-outline-primary btn-lg">
+          <i class="fa-solid fa-user-gear"></i> Join as Technician
+        </a>
+      </div>
+    </div>
+    <div class="hero-image-placeholder">
+      <div style="width: 100%; aspect-ratio: 4/3; background: var(--gray-100); border-radius: var(--radius-lg); border: 2px dashed var(--gray-300); display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--gray-400); gap: 0.75rem;">
+        <i class="fa-regular fa-image" style="font-size: 3rem;"></i>
+        <span style="font-size: 0.9rem; font-weight: 500;">Hero image coming soon</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="services-section">
+    <div class="services-header">
+      <h2>Popular Repair Services</h2>
+      <p>Select your equipment or appliance type to book expert service at your doorstep.</p>
+    </div>
+
+    <div class="services-slider">
+      <div class="services-track">
+        {% for category in categories %}
+          <a href="{% url 'customer_repair_create' %}?category={{ category.id }}" class="service-card">
+            <div class="category-icon">
+              <i class="fa-solid {{ category.icon|default:'fa-wrench' }}"></i>
+            </div>
+            <h3>{{ category.name }}</h3>
+            <p>{{ category.description|truncatewords:8 }}</p>
+          </a>
+        {% empty %}
+          <div class="service-card">
+            <h3>No Services</h3>
+            <p>No service categories configured yet.</p>
+          </div>
+        {% endfor %}
+
+        {% for category in categories %}
+          <a href="{% url 'customer_repair_create' %}?category={{ category.id }}" class="service-card">
+            <div class="category-icon">
+              <i class="fa-solid {{ category.icon|default:'fa-wrench' }}"></i>
+            </div>
+            <h3>{{ category.name }}</h3>
+            <p>{{ category.description|truncatewords:8 }}</p>
+          </a>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div style="text-align: center; margin-top: 1.5rem;">
+      <a href="{% url 'services_list' %}" class="btn btn-secondary">
+        Browse All Categories <i class="fa-solid fa-arrow-right"></i>
+      </a>
+    </div>
+  </section>
+
+  <section style="margin: 4.5rem 0; background: #ffffff; border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 3rem 2rem;">
+    <div style="text-align: center; margin-bottom: 2.5rem;">
+      <span class="badge badge-info" style="font-size: 0.85rem; padding: 0.35rem 0.85rem;">Simple 3-Step Process</span>
+      <h2 style="margin-top: 0.75rem;">How RepairNow Works</h2>
+      <p>Convenient, fast, and completely hassle-free from request to resolution.</p>
+    </div>
+
+    <div class="stepper-container">
+      <div class="stepper">
+        <div class="stepper-progress"></div>
+        <div class="step-item">
+          <div class="step-circle"><span class="step-number">1</span><i class="fa-solid fa-check step-check"></i></div>
+          <div class="step-title">Raise a Request</div>
+        </div>
+        <div class="step-item">
+          <div class="step-circle"><span class="step-number">2</span><i class="fa-solid fa-check step-check"></i></div>
+          <div class="step-title">Find a Technician</div>
+        </div>
+        <div class="step-item">
+          <div class="step-circle"><span class="step-number">3</span><i class="fa-solid fa-check step-check"></i></div>
+          <div class="step-title">Get It Repaired</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 2rem; margin-top: 2rem;">
+      <div style="text-align: center; padding: 1rem;">
+        <h3 style="margin-bottom: 0.5rem;">Raise a Request</h3>
+        <p style="font-size: 0.9rem;">Tell us what needs repair, describe the symptoms, upload a photo, set your location and preferred schedule.</p>
+      </div>
+
+      <div style="text-align: center; padding: 1rem;">
+        <h3 style="margin-bottom: 0.5rem;">Find a Technician</h3>
+        <p style="font-size: 0.9rem;">Our 5-factor matching engine evaluates skills, proximity, availability, ratings, and price compatibility to rank the best technicians.</p>
+      </div>
+
+      <div style="text-align: center; padding: 1rem;">
+        <h3 style="margin-bottom: 0.5rem;">Get It Repaired</h3>
+        <p style="font-size: 0.9rem;">Choose your preferred technician, track them on their way, receive quality repairs, pay upon completion, and rate your experience.</p>
+      </div>
+    </div>
+
+    <div style="text-align: center; margin-top: 2rem;">
+      <a href="{% url 'customer_repair_create' %}" class="btn btn-primary btn-lg">
+        Start Your Repair Now <i class="fa-solid fa-arrow-right"></i>
+      </a>
+    </div>
+  </section>
+
+  <section style="margin: 4rem 0;">
+    <div style="text-align: center; margin-bottom: 2rem;">
+      <h2>Why Homeowners & Businesses Trust RepairNow</h2>
+      <p>Built with transparency, safety, and technician accountability at every step.</p>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.5rem;">
+      <div class="card">
+        <div style="color: var(--primary); font-size: 2rem; margin-bottom: 0.75rem;"><i class="fa-solid fa-certificate"></i></div>
+        <h3>100% Verified Technicians</h3>
+        <p>Every technician undergoes admin credential verification and skill background assessment before receiving customer jobs.</p>
+      </div>
+
+      <div class="card">
+        <div style="color: var(--success); font-size: 2rem; margin-bottom: 0.75rem;"><i class="fa-solid fa-money-bill-wave"></i></div>
+        <h3>Transparent Estimated Pricing</h3>
+        <p>Clear minimum and maximum estimated labor costs upfront before booking. No surprise inflated bills.</p>
+      </div>
+
+      <div class="card">
+        <div style="color: var(--warning); font-size: 2rem; margin-bottom: 0.75rem;"><i class="fa-solid fa-location-crosshairs"></i></div>
+        <h3>Location-Based Matching</h3>
+        <p>Real distance calculations ensure quick response times, especially for urgent breakdown emergencies.</p>
+      </div>
+
+      <div class="card">
+        <div style="color: #9333ea; font-size: 2rem; margin-bottom: 0.75rem;"><i class="fa-solid fa-star-half-stroke"></i></div>
+        <h3>Authentic Customer Reviews</h3>
+        <p>Only customers with completed jobs can leave reviews, guaranteeing 100% legitimate feedback and trustworthy ratings.</p>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<footer class="footer">
+  <div class="footer-inner">
+
+    <div class="footer-col footer-brand-col">
+      <div class="footer-brand-name">RepairNow</div>
+      <p class="footer-tagline">Find the Right Technician.<br>Fix It Fast.</p>
+    </div>
+
+    <div class="footer-col">
+      <h4 class="footer-col-title">Quick Links</h4>
+      <ul class="footer-col-links">
+        <li><a href="{% url 'home' %}">Home</a></li>
+        <li><a href="{% url 'services_list' %}">Services</a></li>
+        <li><a href="{% url 'about' %}">About Us</a></li>
+        <li><a href="{% url 'customer_repair_create' %}">Book a Repair</a></li>
+      </ul>
+    </div>
+
+    <div class="footer-col">
+      <h4 class="footer-col-title">For Technicians</h4>
+      <ul class="footer-col-links">
+        <li><a href="{% url 'register_technician' %}">Join as Technician</a></li>
+        <li><a href="{% url 'login' %}">Technician Login</a></li>
+      </ul>
+    </div>
+
+  </div>
+  <div class="footer-bottom">
+    <span>&copy; 2026 RepairNow. All rights reserved.</span>
+  </div>
+</footer>
+{% endblock %}
