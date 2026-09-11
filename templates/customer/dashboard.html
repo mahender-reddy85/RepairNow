@@ -16,22 +16,28 @@
 
   <div class="stats-grid">
     <div class="stat-card">
-      <div class="stat-icon stat-icon-blue"><i class="fa-solid fa-clock-rotate-left"></i></div>
-      <div>
+      <div class="stat-icon stat-icon-blue">
+        <i class="fa-solid fa-clock"></i>
+      </div>
+      <div class="stat-content">
         <div class="stat-value">{{ pending_count }}</div>
         <div class="stat-label">Pending / Matching</div>
       </div>
     </div>
     <div class="stat-card">
-      <div class="stat-icon stat-icon-amber"><i class="fa-solid fa-screwdriver-wrench"></i></div>
-      <div>
+      <div class="stat-icon stat-icon-amber">
+        <i class="fa-solid fa-wrench"></i>
+      </div>
+      <div class="stat-content">
         <div class="stat-value">{{ ongoing_count }}</div>
         <div class="stat-label">Ongoing Repairs</div>
       </div>
     </div>
     <div class="stat-card">
-      <div class="stat-icon stat-icon-green"><i class="fa-solid fa-circle-check"></i></div>
-      <div>
+      <div class="stat-icon stat-icon-green">
+        <i class="fa-solid fa-check-circle"></i>
+      </div>
+      <div class="stat-content">
         <div class="stat-value">{{ completed_count }}</div>
         <div class="stat-label">Completed Repairs</div>
       </div>

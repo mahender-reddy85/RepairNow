@@ -32,7 +32,7 @@
             <li><a href="{% url 'technician_requests' %}" class="nav-link"><i class="fa-solid fa-inbox"></i> Requests</a></li>
             <li><a href="{% url 'technician_jobs' %}" class="nav-link"><i class="fa-solid fa-briefcase"></i> Jobs</a></li>
           {% else %}
-            <li><a href="{% url 'customer_dashboard' %}" class="nav-link"><i class="fa-solid fa-house-chimney"></i> Dashboard</a></li>
+            <li><a href="{% url 'customer_dashboard' %}" class="nav-link"> Dashboard</a></li>
             <li><a href="{% url 'customer_repair_list' %}" class="nav-link">My Repairs</a></li>
           {% endif %}
 
@@ -103,7 +103,7 @@
             <a href="{% url 'technician_jobs' %}" class="nav-link"><i class="fa-solid fa-briefcase"></i> Jobs</a>
             <a href="{% url 'technician_availability' %}" class="nav-link"><i class="fa-regular fa-clock"></i> Availability</a>
           {% else %}
-            <a href="{% url 'customer_dashboard' %}" class="nav-link"><i class="fa-solid fa-house-chimney"></i> Dashboard</a>
+            <a href="{% url 'customer_dashboard' %}" class="nav-link"> Dashboard</a>
             <a href="{% url 'customer_repair_list' %}" class="nav-link">My Repairs</a>
             <a href="{% url 'customer_history' %}" class="nav-link">History</a>
           {% endif %}

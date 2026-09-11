@@ -18,7 +18,7 @@
     <form method="post" enctype="multipart/form-data" novalidate>
       {% csrf_token %}
 
-      <div class="form-row">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
         <div class="form-group">
           <label class="form-label" for="{{ form.service_category.id_for_label }}">Service / Appliance Category *</label>
           {{ form.service_category }}
@@ -31,23 +31,21 @@
           <div class="form-text">e.g. Samsung 7.5kg Front-Load Washing Machine, Daikin 1.5 Ton AC</div>
           {% if form.device_name.errors %}<div class="form-error">{{ form.device_name.errors.0 }}</div>{% endif %}
         </div>
-      </div>
 
-      <div class="form-group">
-        <label class="form-label" for="{{ form.problem_description.id_for_label }}">Problem Description *</label>
-        {{ form.problem_description }}
-        <div class="form-text">Please provide as much context as possible (symptoms, sounds, errors shown).</div>
-        {% if form.problem_description.errors %}<div class="form-error">{{ form.problem_description.errors.0 }}</div>{% endif %}
-      </div>
+        <div class="form-group" style="grid-column: 1 / -1;">
+          <label class="form-label" for="{{ form.problem_description.id_for_label }}">Problem Description *</label>
+          {{ form.problem_description }}
+          <div class="form-text">Please provide as much context as possible (symptoms, sounds, errors shown).</div>
+          {% if form.problem_description.errors %}<div class="form-error">{{ form.problem_description.errors.0 }}</div>{% endif %}
+        </div>
 
-      <div class="form-group">
-        <label class="form-label" for="{{ form.problem_image.id_for_label }}">Upload Problem / Device Photo (Optional)</label>
-        {{ form.problem_image }}
-        <div class="form-text">Helps the technician diagnose the fault faster.</div>
-        {% if form.problem_image.errors %}<div class="form-error">{{ form.problem_image.errors.0 }}</div>{% endif %}
-      </div>
+        <div class="form-group" style="grid-column: 1 / -1;">
+          <label class="form-label" for="{{ form.problem_image.id_for_label }}">Upload Problem / Device Photo (Optional)</label>
+          {{ form.problem_image }}
+          <div class="form-text">Helps the technician diagnose the fault faster.</div>
+          {% if form.problem_image.errors %}<div class="form-error">{{ form.problem_image.errors.0 }}</div>{% endif %}
+        </div>
 
-      <div class="form-row">
         <div class="form-group">
           <label class="form-label" for="{{ form.location.id_for_label }}">Repair Location / Address *</label>
           {{ form.location }}
@@ -59,9 +57,7 @@
           {{ form.city }}
           {% if form.city.errors %}<div class="form-error">{{ form.city.errors.0 }}</div>{% endif %}
         </div>
-      </div>
 
-      <div class="form-row">
         <div class="form-group">
           <label class="form-label" for="{{ form.urgency.id_for_label }}">Urgency Level *</label>
           {{ form.urgency }}
@@ -79,13 +75,13 @@
           {{ form.preferred_time }}
           {% if form.preferred_time.errors %}<div class="form-error">{{ form.preferred_time.errors.0 }}</div>{% endif %}
         </div>
-      </div>
 
-      <div class="form-group" style="max-width: 320px;">
-        <label class="form-label" for="{{ form.budget.id_for_label }}">Expected Budget (Optional, in ₹)</label>
-        {{ form.budget }}
-        <div class="form-text">Leave blank if open to technician standard quotes.</div>
-        {% if form.budget.errors %}<div class="form-error">{{ form.budget.errors.0 }}</div>{% endif %}
+        <div class="form-group">
+          <label class="form-label" for="{{ form.budget.id_for_label }}">Expected Budget (Optional, in ₹)</label>
+          {{ form.budget }}
+          <div class="form-text">Leave blank if open to technician standard quotes.</div>
+          {% if form.budget.errors %}<div class="form-error">{{ form.budget.errors.0 }}</div>{% endif %}
+        </div>
       </div>
 
       <div style="margin-top: 2rem; display: flex; gap: 1rem; align-items: center;">

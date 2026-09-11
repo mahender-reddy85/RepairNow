@@ -365,14 +365,7 @@ a:hover { color: var(--primary-hover); }
   color: #ffffff;
 }
 
-.btn-danger {
-  background-color: var(--danger);
-  color: #ffffff;
-}
-.btn-danger:hover {
-  background-color: #dc2626;
-  color: #ffffff;
-}
+
 
 .btn-outline-primary {
   background-color: transparent;
@@ -574,39 +567,65 @@ a:hover { color: var(--primary-hover); }
 
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 1.25rem;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
   margin-bottom: 2rem;
 }
 
 .stat-card {
   background: #ffffff;
   border-radius: var(--radius-lg);
-  padding: 1.25rem;
+  padding: 1.5rem;
   border: 1px solid var(--gray-200);
   display: flex;
   align-items: center;
   gap: 1.25rem;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
 }
 
 .stat-icon {
-  width: 52px;
-  height: 52px;
+  width: 56px;
+  height: 56px;
   border-radius: var(--radius-md);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 1.5rem;
+  flex-shrink: 0;
 }
 
-.stat-icon-blue { background-color: transparent; color: var(--primary); }
-.stat-icon-green { background-color: transparent; color: var(--success); }
-.stat-icon-amber { background-color: transparent; color: var(--warning); }
+.stat-icon-blue { 
+  background-color: var(--primary-light); 
+  color: var(--primary); 
+}
+
+.stat-icon-green { 
+  background-color: var(--success-light); 
+  color: var(--success); 
+}
+
+.stat-icon-amber { 
+  background-color: var(--warning-light); 
+  color: var(--warning); 
+}
+
 .stat-icon-purple { background-color: transparent; color: #9333ea; }
 
+.stat-content {
+  flex: 1;
+}
+
 .stat-value {
-  font-size: 1.85rem;
-  font-weight: 800;
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--text-heading);
+  line-height: 1.2;
   color: var(--gray-900);
   line-height: 1;
 }
