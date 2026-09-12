@@ -14,39 +14,14 @@
     </a>
   </div>
 
-  <div class="stats-grid">
-    <div class="stat-card">
-      <div class="stat-icon stat-icon-blue">
-        <i class="fa-solid fa-clock"></i>
+  <div style="margin-bottom: 2rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; border-bottom: 1px solid var(--gray-200); padding-bottom: 0.75rem; margin-bottom: 1rem;">
+      <h3 class="card-title" style="margin: 0;">Active Repairs &amp; Requests</h3>
+      <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; font-size: 0.82rem; color: var(--gray-600); margin-left: auto;">
+        <span>Pending/Ongoing: {{ pending_count|add:ongoing_count }}</span>
+        <span style="color: var(--gray-400);">|</span>
+        <span>Completed: {{ completed_count }}</span>
       </div>
-      <div class="stat-content">
-        <div class="stat-value">{{ pending_count }}</div>
-        <div class="stat-label">Pending / Matching</div>
-      </div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-icon stat-icon-amber">
-        <i class="fa-solid fa-wrench"></i>
-      </div>
-      <div class="stat-content">
-        <div class="stat-value">{{ ongoing_count }}</div>
-        <div class="stat-label">Ongoing Repairs</div>
-      </div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-icon stat-icon-green">
-        <i class="fa-solid fa-check-circle"></i>
-      </div>
-      <div class="stat-content">
-        <div class="stat-value">{{ completed_count }}</div>
-        <div class="stat-label">Completed Repairs</div>
-      </div>
-    </div>
-  </div>
-
-  <div class="card" style="margin-bottom: 2rem;">
-    <div class="card-header">
-      <h3 class="card-title"><i class="fa-solid fa-bolt" style="color: var(--primary);"></i> Active Repairs &amp; Requests</h3>
       <a href="{% url 'customer_repair_list' %}" class="btn btn-secondary btn-sm">View All</a>
     </div>
 

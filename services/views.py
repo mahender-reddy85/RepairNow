@@ -4,13 +4,13 @@ from technicians.models import TechnicianProfile
 from repairs.models import Job
 
 def home(request):
-    categories = ServiceCategory.objects.filter(is_active=True)[:8]
+    categories = ServiceCategory.objects.filter(is_active=True).order_by('name')
     verified_tech_count = TechnicianProfile.objects.filter(
         verification_status=TechnicianProfile.VERIFICATION_VERIFIED,
         user__is_active=True
     ).count()
     completed_jobs_count = Job.objects.filter(status=Job.STATUS_COMPLETED).count()
-    
+
     context = {
         'categories': categories,
         'verified_tech_count': max(verified_tech_count, 12),

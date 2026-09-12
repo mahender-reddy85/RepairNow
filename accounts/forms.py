@@ -88,6 +88,7 @@ class TechnicianRegistrationForm(forms.ModelForm):
     address = forms.CharField(widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Workshop / Base Address'}))
     city = forms.CharField(initial='Vijayawada', widget=forms.TextInput(attrs={'class': 'form-control'}))
     bio = forms.CharField(required=False, widget=forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Brief intro and experience summary'}))
+    profile_image = forms.ImageField(required=False, widget=forms.FileInput(attrs={'class': 'form-control profile-image-input', 'accept': 'image/*'}))
     
     skills = forms.ModelMultipleChoiceField(
         queryset=ServiceCategory.objects.filter(is_active=True),
@@ -142,6 +143,7 @@ class TechnicianRegistrationForm(forms.ModelForm):
                 address=self.cleaned_data['address'],
                 city=self.cleaned_data['city'],
                 bio=self.cleaned_data.get('bio', ''),
+                profile_image=self.cleaned_data.get('profile_image'),
                 estimated_cost_min=self.cleaned_data['estimated_cost_min'],
                 estimated_cost_max=self.cleaned_data['estimated_cost_max'],
                 verification_document=self.cleaned_data.get('verification_document'),
@@ -163,7 +165,7 @@ class CustomerProfileUpdateForm(forms.ModelForm):
             'city': forms.TextInput(attrs={'class': 'form-control'}),
             'state': forms.TextInput(attrs={'class': 'form-control'}),
             'postal_code': forms.TextInput(attrs={'class': 'form-control'}),
-            'profile_image': forms.FileInput(attrs={'class': 'form-control'}),
+            'profile_image': forms.FileInput(attrs={'class': 'form-control profile-image-input', 'accept': 'image/*'}),
         }
 
 
@@ -195,6 +197,6 @@ class TechnicianProfileUpdateForm(forms.ModelForm):
             'estimated_cost_min': forms.NumberInput(attrs={'class': 'form-control'}),
             'estimated_cost_max': forms.NumberInput(attrs={'class': 'form-control'}),
             'availability_status': forms.Select(attrs={'class': 'form-select'}),
-            'profile_image': forms.FileInput(attrs={'class': 'form-control'}),
+            'profile_image': forms.FileInput(attrs={'class': 'form-control profile-image-input', 'accept': 'image/*'}),
             'verification_document': forms.FileInput(attrs={'class': 'form-control'}),
         }

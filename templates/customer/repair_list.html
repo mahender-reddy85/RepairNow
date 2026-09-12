@@ -19,7 +19,6 @@
     <p style="margin: 0;">Overview of all your submitted repair requests and active repairs.</p>
   </div>
 
-  <div class="card">
     {% if requests %}
       <div class="table-responsive">
         <table class="table">
@@ -74,6 +73,5 @@
         <a href="{% url 'customer_repair_create' %}" class="btn btn-primary">Book a Repair Now</a>
       </div>
     {% endif %}
-  </div>
 </div>
 {% endblock %}

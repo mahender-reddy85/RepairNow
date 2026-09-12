@@ -3,7 +3,7 @@
 {% block title %}Create Repair Request — RepairNow{% endblock %}
 
 {% block content %}
-<div class="container container-narrow">
+<div class="container">
   <div class="card" style="padding: 2.5rem;">
     <div class="page-header" style="margin-bottom: 2rem;">
       <div class="breadcrumbs">
@@ -18,7 +18,7 @@
     <form method="post" enctype="multipart/form-data" novalidate>
       {% csrf_token %}
 
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+      <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.5rem;">
         <div class="form-group">
           <label class="form-label" for="{{ form.service_category.id_for_label }}">Service / Appliance Category *</label>
           {{ form.service_category }}
@@ -28,14 +28,12 @@
         <div class="form-group">
           <label class="form-label" for="{{ form.device_name.id_for_label }}">Device / Equipment Model *</label>
           {{ form.device_name }}
-          <div class="form-text">e.g. Samsung 7.5kg Front-Load Washing Machine, Daikin 1.5 Ton AC</div>
           {% if form.device_name.errors %}<div class="form-error">{{ form.device_name.errors.0 }}</div>{% endif %}
         </div>
 
         <div class="form-group" style="grid-column: 1 / -1;">
-          <label class="form-label" for="{{ form.problem_description.id_for_label }}">Problem Description *</label>
+          <label class="form-label" for="{{ form.problem_description.id_for_label }}">Problem Description * (Please provide as much context as possible [symptoms, sounds, errors shown])</label>
           {{ form.problem_description }}
-          <div class="form-text">Please provide as much context as possible (symptoms, sounds, errors shown).</div>
           {% if form.problem_description.errors %}<div class="form-error">{{ form.problem_description.errors.0 }}</div>{% endif %}
         </div>
 
@@ -85,8 +83,8 @@
       </div>
 
       <div style="margin-top: 2rem; display: flex; gap: 1rem; align-items: center;">
-        <button type="submit" class="btn btn-primary btn-lg">
-          <i class="fa-solid fa-bolt"></i> Find Matching Technicians
+        <button type="submit" class="btn btn-secondary btn-lg">
+          Find Matching Technicians <i class="fa-solid fa-arrow-right"></i>
         </button>
         <a href="{% url 'customer_dashboard' %}" class="btn btn-secondary">Cancel</a>
       </div>

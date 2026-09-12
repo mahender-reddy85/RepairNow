@@ -7,23 +7,42 @@
 
   <section class="hero">
     <div class="hero-content">
-      <h1>Need a Repair?</h1>
-      <h2>Find the Right Technician. Fix It Fast.</h2>
-      <p>Reliable, verified local repair technicians when you need them. Transparent estimated prices, instant rule-based matching, and real-time repair tracking.</p>
+      <h2 class="home-title">
+        <span class="home-title-line">Need</span>
+        <span class="tech-word-swap" aria-label="Technician service words">
+          {% for category in categories %}
+            <span class="tech-word-text">{{ category.name }}</span>
+          {% empty %}
+            <span class="tech-word-text">Repair</span>
+          {% endfor %}
+        </span>
+      </h2>
+
+      <div class="hero-subtitle">
+        <p>Verified technicians at your doorstep.</p>
+        <p>Get transparent pricing and fast matching.</p>
+      </div>
+
       <div class="hero-actions">
-        <a href="{% url 'customer_repair_create' %}" class="btn btn-primary btn-lg">
+        <a href="{% url 'customer_repair_create' %}" class="btn btn-fill-tech btn-lg">
           <i class="fa-solid fa-screwdriver-wrench"></i> Find a Technician
         </a>
         <a href="{% url 'register_technician' %}" class="btn btn-outline-primary btn-lg">
           <i class="fa-solid fa-user-gear"></i> Join as Technician
         </a>
       </div>
-    </div>
-    <div class="hero-image-placeholder">
-      <div style="width: 100%; aspect-ratio: 4/3; background: var(--gray-100); border-radius: var(--radius-lg); border: 2px dashed var(--gray-300); display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--gray-400); gap: 0.75rem;">
-        <i class="fa-regular fa-image" style="font-size: 3rem;"></i>
-        <span style="font-size: 0.9rem; font-weight: 500;">Hero image coming soon</span>
+
+      <div class="hero-proof">
+        <span><i class="fa-solid fa-check"></i> Verified technicians</span>
+        <span><i class="fa-solid fa-check"></i> Transparent pricing</span>
+        <span><i class="fa-solid fa-check"></i> Real-time tracking</span>
       </div>
+    </div>
+
+    <div class="hero-image-placeholder">
+      <div class="hero-illustration">
+        <img src="/media/customers/technician.jpg" alt="Technician repairing appliance" class="hero-photo">
+      </img>
     </div>
   </section>
 
@@ -48,16 +67,6 @@
             <h3>No Services</h3>
             <p>No service categories configured yet.</p>
           </div>
-        {% endfor %}
-
-        {% for category in categories %}
-          <a href="{% url 'customer_repair_create' %}?category={{ category.id }}" class="service-card">
-            <div class="category-icon">
-              <i class="fa-solid {{ category.icon|default:'fa-wrench' }}"></i>
-            </div>
-            <h3>{{ category.name }}</h3>
-            <p>{{ category.description|truncatewords:8 }}</p>
-          </a>
         {% endfor %}
       </div>
     </div>
@@ -112,7 +121,7 @@
     </div>
 
     <div style="text-align: center; margin-top: 2rem;">
-      <a href="{% url 'customer_repair_create' %}" class="btn btn-primary btn-lg">
+      <a href="{% url 'customer_repair_create' %}" class="btn btn-plain btn-lg">
         Start Your Repair Now <i class="fa-solid fa-arrow-right"></i>
       </a>
     </div>

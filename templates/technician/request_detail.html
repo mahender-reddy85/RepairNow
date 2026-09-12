@@ -57,7 +57,12 @@
 
     {% if repair_request.problem_image %}
       <div style="margin-bottom: 1.5rem;">
-        <h4 style="color: var(--gray-800); margin-bottom: 0.5rem;">Fault / Equipment Photo</h4>
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 0.5rem;">
+          <h4 style="color: var(--gray-800); margin: 0;">Fault / Equipment Photo</h4>
+          <a href="{{ repair_request.problem_image.url }}" target="_blank" class="btn btn-secondary btn-sm" title="Preview fault image">
+            <i class="fa-regular fa-image"></i> Preview
+          </a>
+        </div>
         <img src="{{ repair_request.problem_image.url }}" alt="Problem Photo" style="max-width: 100%; border-radius: var(--radius-md); border: 1px solid var(--gray-200); max-height: 350px;">
       </div>
     {% endif %}

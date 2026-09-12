@@ -10,6 +10,19 @@ class RepairRequestForm(forms.ModelForm):
         help_text="Select when you need the technician"
     )
 
+    PREFERRED_TIME_CHOICES = [
+        ('', 'Select preferred time'),
+        ('Morning (8 AM - 12 PM)', 'Morning (8 AM - 12 PM)'),
+        ('Afternoon (12 PM - 4 PM)', 'Afternoon (12 PM - 4 PM)'),
+        ('Evening (4 PM - 8 PM)', 'Evening (4 PM - 8 PM)'),
+    ]
+
+    preferred_time = forms.ChoiceField(
+        choices=PREFERRED_TIME_CHOICES,
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-select'}),
+    )
+
     class Meta:
         model = RepairRequest
         fields = [
@@ -25,7 +38,6 @@ class RepairRequestForm(forms.ModelForm):
             'location': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Door No, Apartment / Street, Landmark'}),
             'city': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'City'}),
             'urgency': forms.Select(attrs={'class': 'form-select'}),
-            'preferred_time': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g. Morning 10:00 AM, Evening 5:00 PM'}),
             'budget': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Optional expected budget (₹)'}),
         }
 

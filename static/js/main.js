@@ -7,7 +7,33 @@ document.addEventListener('DOMContentLoaded', () => {
   initActiveNavHighlight();
   initAlertAutoDismiss();
   initStepperAnimation();
+  initImagePreview();
+  initFileInputName();
+  initTechWordRotation();
 });
+
+function initTechWordRotation() {
+  const words = Array.from(document.querySelectorAll('.tech-word-text'));
+  if (!words.length) return;
+
+  let current = 0;
+  words[current].classList.add('active');
+
+  setInterval(() => {
+    const previous = current;
+    current = (current + 1) % words.length;
+
+    words[previous].classList.remove('active');
+    words[previous].classList.add('exit');
+
+    words[current].classList.remove('exit');
+    words[current].classList.add('active');
+
+    setTimeout(() => {
+      words[previous].classList.remove('exit');
+    }, 500);
+  }, 2500);
+}
 
 function initMobileNav() {
   const toggleBtn = document.querySelector('.mobile-toggle');
@@ -183,6 +209,81 @@ function initStarRating() {
   });
 }
 
+function initFileInputName() {
+  const fileInputs = document.querySelectorAll('input[type="file"]');
+
+  fileInputs.forEach(input => {
+    const fileGroup = input.closest('.form-group');
+    if (!fileGroup) return;
+
+    const fileNameBox = fileGroup.querySelector('.file-input-name');
+    const updateName = () => {
+      const file = input.files && input.files[0];
+      if (!fileNameBox) return;
+      if (file) {
+        fileNameBox.textContent = file.name;
+        fileNameBox.style.display = 'block';
+      } else {
+        fileNameBox.textContent = 'No file chosen';
+        fileNameBox.style.display = 'none';
+      }
+    };
+
+    input.addEventListener('change', updateName);
+    updateName();
+  });
+}
+
+function initImagePreview() {
+  const fileInputs = document.querySelectorAll('input[type="file"]');
+
+  fileInputs.forEach(input => {
+    const accepted = input.accept || '';
+    if (!accepted.includes('image')) return;
+
+    input.addEventListener('change', () => {
+      const file = input.files && input.files[0];
+      if (!file) return;
+
+      const form = input.closest('form');
+      if (!form) return;
+
+      const profileLabel = form.querySelector(`label[for="${input.id}"]`);
+      if (!profileLabel) return;
+
+      let previewImg = profileLabel.querySelector('img.upload-preview-image');
+      if (!previewImg) {
+        const existingImg = profileLabel.querySelector('img');
+        if (existingImg) {
+          previewImg = existingImg;
+          previewImg.classList.add('upload-preview-image');
+        } else {
+          previewImg = document.createElement('img');
+          previewImg.className = 'upload-preview-image';
+          previewImg.alt = 'Selected profile preview';
+          previewImg.style.width = '100px';
+          previewImg.style.height = '100px';
+          previewImg.style.borderRadius = '50%';
+          previewImg.style.objectFit = 'cover';
+          previewImg.style.border = '3px solid var(--gray-200)';
+          const placeholderIcon = profileLabel.querySelector('div');
+          if (placeholderIcon) {
+            placeholderIcon.remove();
+          }
+          profileLabel.appendChild(previewImg);
+        }
+      }
+
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        previewImg.src = evt.target.result;
+        previewImg.style.display = 'block';
+      };
+      reader.readAsDataURL(file);
+    });
+  });
+}
+
 function initStepperAnimation() {
   const stepper = document.querySelector('.stepper');
   if (!stepper) return;
@@ -193,26 +294,35 @@ function initStepperAnimation() {
 
     steps.forEach(step => step.classList.remove('completed'));
 
-    progress.style.animation = 'none';
-    progress.offsetHeight;
-    progress.style.animation = 'progressFill 2.5s ease-out forwards';
+    if (progress) {
+      progress.style.animation = 'none';
+      progress.offsetHeight;
+      progress.style.animation = 'progressFill 3s ease-out forwards';
+    }
 
     steps.forEach((step, index) => {
       const circle = step.querySelector('.step-circle');
+      if (!circle) return;
+
       circle.style.animation = 'none';
       circle.offsetHeight;
 
       const delays = [
-        { anim: '0.6s', timeout: 1000 },
-        { anim: '1.4s', timeout: 1800 },
-        { anim: '2.2s', timeout: 2600 },
+        { anim: '0.3s', timeout: 900 },
+        { anim: '1.1s', timeout: 1700 },
+        { anim: '1.9s', timeout: 2600 },
       ];
 
       if (delays[index]) {
-        circle.style.animation = `stepComplete 0.4s ease-out ${delays[index].anim} forwards`;
+        circle.style.animation = `stepComplete 0.45s ease-out ${delays[index].anim} forwards`;
         setTimeout(() => step.classList.add('completed'), delays[index].timeout);
       }
     });
+  }
+
+  if (!('IntersectionObserver' in window)) {
+    runStepperAnimation();
+    return;
   }
 
   const observer = new IntersectionObserver((entries) => {
