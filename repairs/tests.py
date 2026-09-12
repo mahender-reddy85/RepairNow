@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from django.test import TestCase, Client
 from django.urls import reverse
 from django.contrib.auth import get_user_model
@@ -14,6 +16,13 @@ User = get_user_model()
 
 
 class RepairNowTestSuite(TestCase):
+    def test_tracking_template_uses_check_and_cross_icons_not_technician_selected_label(self):
+        template_text = Path('templates/customer/track.html').read_text(encoding='utf-8')
+
+        self.assertNotIn('Technician Selected', template_text)
+        self.assertIn('fa-check', template_text)
+        self.assertIn('fa-xmark', template_text)
+
     def setUp(self):
         self.client = Client()
 

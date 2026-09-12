@@ -9,30 +9,74 @@ document.addEventListener('DOMContentLoaded', () => {
   initStepperAnimation();
   initImagePreview();
   initFileInputName();
-  initTechWordRotation();
+  initHeroVisualSync();
 });
 
-function initTechWordRotation() {
+function initHeroVisualSync() {
+  const heroImage = document.querySelector('.hero-photo');
   const words = Array.from(document.querySelectorAll('.tech-word-text'));
-  if (!words.length) return;
 
-  let current = 0;
-  words[current].classList.add('active');
+  const serviceImageMap = {
+    'AC Repair': '/media/customers/ac.png',
+    'Computer Repair': '/media/customers/computer.png',
+    'Electrical Repair': '/media/customers/electrician.jpg',
+    'Mobile Repair': '/media/customers/mobile.jpg',
+    'Plumbing': '/media/customers/plumbing.jpg',
+    'Refrigerator Repair': '/media/customers/refrigirator.jpg',
+    'TV Repair': '/media/customers/tv.png',
+    'Vehicle Repair': '/media/customers/vehicle.png',
+    'Washing Machine Repair': '/media/customers/technician.jpg'
+  };
+
+  let wordIndex = 0;
+
+  if (words.length) {
+    words[wordIndex].classList.add('active');
+  }
+
+  if (heroImage && words.length) {
+    const firstService = words[0].textContent.trim();
+    heroImage.src = serviceImageMap[firstService] || '/media/customers/technician.jpg';
+    heroImage.alt = firstService + ' RepairNow service image';
+  }
 
   setInterval(() => {
-    const previous = current;
-    current = (current + 1) % words.length;
+    const nextWordIndex = words.length ? (wordIndex + 1) % words.length : 0;
 
-    words[previous].classList.remove('active');
-    words[previous].classList.add('exit');
+    if (heroImage && words.length) {
+      const nextService = words[nextWordIndex].textContent.trim();
+      const nextImage = serviceImageMap[nextService] || '/media/customers/technician.jpg';
 
-    words[current].classList.remove('exit');
-    words[current].classList.add('active');
+      heroImage.animate([
+        { opacity: 1 },
+        { opacity: 0.2 },
+        { opacity: 1 }
+      ], {
+        duration: 500,
+        easing: 'ease-in-out'
+      });
 
-    setTimeout(() => {
-      words[previous].classList.remove('exit');
-    }, 500);
-  }, 2500);
+      setTimeout(() => {
+        heroImage.src = nextImage;
+        heroImage.alt = nextService + ' RepairNow service image';
+        heroImage.title = nextService;
+      }, 250);
+    }
+
+    if (words.length) {
+      words[wordIndex].classList.remove('active');
+      words[wordIndex].classList.add('exit');
+
+      words[nextWordIndex].classList.remove('exit');
+      words[nextWordIndex].classList.add('active');
+
+      setTimeout(() => {
+        words[wordIndex].classList.remove('exit');
+      }, 480);
+
+      wordIndex = nextWordIndex;
+    }
+  }, 3000);
 }
 
 function initMobileNav() {

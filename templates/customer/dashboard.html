@@ -9,7 +9,7 @@
       <h2>Hello, {{ profile.full_name|default:user.username }}!</h2>
       <p style="margin: 0;">Welcome to your RepairNow dashboard. Monitor your active repairs or book a new technician.</p>
     </div>
-    <a href="{% url 'customer_repair_create' %}" class="btn btn-primary btn-lg" style="flex-shrink: 0;">
+    <a href="{% url 'customer_repair_create' %}" class="btn btn-outline-primary btn-lg" style="flex-shrink: 0;">
       <i class="fa-solid fa-plus-circle"></i> Create Repair Request
     </a>
   </div>
@@ -62,7 +62,11 @@
                   {% endif %}
                 </td>
                 <td>
-                  <span class="badge badge-{{ req.status|lower }}">{{ req.get_status_display }}</span>
+                  {% if req.selected_technician %}
+                    <i class="fa-solid fa-check" style="color: var(--success); font-size: 1rem;" title="Technician selected"></i>
+                  {% else %}
+                    <i class="fa-solid fa-xmark" style="color: var(--danger); font-size: 1rem;" title="No technician selected"></i>
+                  {% endif %}
                 </td>
                 <td>
                   {% if not req.selected_technician %}

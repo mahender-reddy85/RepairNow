@@ -12,7 +12,7 @@
     </div>
     <div style="display: flex; justify-content: space-between; align-items: center;">
       <h2>My Repair Requests</h2>
-      <a href="{% url 'customer_repair_create' %}" class="btn btn-primary">
+      <a href="{% url 'customer_repair_create' %}" class="btn btn-outline-primary">
         <i class="fa-solid fa-plus-circle"></i> New Repair Request
       </a>
     </div>
@@ -48,7 +48,13 @@
                     <span style="color: var(--gray-400); font-style: italic;">Not Selected</span>
                   {% endif %}
                 </td>
-                <td><span class="badge badge-{{ req.status|lower }}">{{ req.get_status_display }}</span></td>
+                <td>
+                  {% if req.selected_technician %}
+                    <i class="fa-solid fa-check" style="color: var(--success); font-size: 1rem;" title="Technician selected"></i>
+                  {% else %}
+                    <i class="fa-solid fa-xmark" style="color: var(--danger); font-size: 1rem;" title="No technician selected"></i>
+                  {% endif %}
+                </td>
                 <td>{{ req.preferred_date|date:"M d, Y" }}</td>
                 <td>
                   <div style="display: flex; gap: 0.35rem;">

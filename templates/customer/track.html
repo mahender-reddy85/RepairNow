@@ -51,6 +51,7 @@
           <h3 style="margin-bottom: 1.5rem; font-size: 1.15rem;">Live Progression Status</h3>
 
           <div class="stepper">
+            <div class="stepper-progress"></div>
 
             <div class="step-item {% if repair_request.status != 'PENDING' %}completed{% else %}active{% endif %}">
               <div class="step-circle">
@@ -59,11 +60,11 @@
               <div class="step-title">Submitted</div>
             </div>
 
-            <div class="step-item {% if repair_request.selected_technician and repair_request.status != 'TECHNICIAN_SELECTED' and repair_request.status != 'PENDING' and repair_request.status != 'MATCHING' %}completed{% elif repair_request.status == 'TECHNICIAN_SELECTED' %}active{% endif %}">
+            <div class="step-item {% if repair_request.selected_technician %}completed{% elif repair_request.status == 'PENDING' or repair_request.status == 'MATCHING' %}active{% endif %}">
               <div class="step-circle">
-                {% if repair_request.selected_technician and repair_request.status != 'TECHNICIAN_SELECTED' and repair_request.status != 'PENDING' and repair_request.status != 'MATCHING' %}<i class="fa-solid fa-check"></i>{% else %}2{% endif %}
+                {% if repair_request.selected_technician %}<i class="fa-solid fa-check"></i>{% else %}<i class="fa-solid fa-xmark"></i>{% endif %}
               </div>
-              <div class="step-title">Technician Selected</div>
+              <div class="step-title">Selected</div>
             </div>
 
             <div class="step-item {% if repair_request.status == 'ON_THE_WAY' or repair_request.status == 'ARRIVED' or repair_request.status == 'IN_PROGRESS' or repair_request.status == 'COMPLETED' %}completed{% elif repair_request.status == 'ACCEPTED' %}active{% endif %}">
@@ -143,7 +144,7 @@
 
       <div class="card">
         <div class="card-header">
-          <h3 class="card-title"><i class="fa-solid fa-timeline"></i> Status Transition History</h3>
+          <h3 class="card-title">Status Transition History</h3>
         </div>
         {% if history %}
           <ul style="list-style: none; padding-left: 0;">
@@ -202,8 +203,8 @@
 
             <div style="border-top: 1px solid var(--gray-200); padding-top: 1rem; font-size: 0.9rem;">
               <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-                <span style="color: var(--gray-500);">Contact Phone:</span>
-                <strong><i class="fa-solid fa-phone" style="color: var(--primary);"></i> {{ tech.phone }}</strong>
+                <span style="color: var(--gray-500);">Phone:</span>
+                <strong>{{ tech.phone }}</strong>
               </div>
               <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
                 <span style="color: var(--gray-500);">Experience:</span>
@@ -242,7 +243,7 @@
           </a>
         {% else %}
           <a href="{% url 'submit_complaint' %}" class="btn btn-secondary btn-sm btn-block">
-            <i class="fa-regular fa-flag"></i> Contact Support
+            <i class="fa-regular fa-flag"></i> Support
           </a>
         {% endif %}
       </div>
