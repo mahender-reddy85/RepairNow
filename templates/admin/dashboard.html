@@ -7,7 +7,6 @@
   <div class="page-header">
     <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
       <h2>Admin Management Portal</h2>
-      <span class="badge badge-verified"><i class="fa-solid fa-shield-halved"></i> Superuser</span>
     </div>
     <p>High-level platform metrics, technician moderation, and request monitoring.</p>
   </div>
@@ -34,77 +33,40 @@
     </div>
   </div>
 
-  <div class="stats-grid">
-    <div class="stat-card">
-      <div class="stat-icon stat-icon-blue"><i class="fa-solid fa-users"></i></div>
-      <div>
-        <div class="stat-value">{{ total_customers }}</div>
-        <div class="stat-label">Total Customers</div>
-      </div>
+  <div class="table-responsive">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Total Customers</th>
+            <th>Total Technicians</th>
+            <th>Verified Technicians</th>
+            <th>Pending Verifications</th>
+            <th>Active Requests</th>
+            <th>Completed Jobs</th>
+            <th>Cancelled Jobs</th>
+            <th>Avg Platform Rating</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>{{ total_customers }}</td>
+            <td>{{ total_technicians }}</td>
+            <td>{{ verified_technicians }}</td>
+            <td>{{ pending_verifications }}</td>
+            <td>{{ active_requests }}</td>
+            <td>{{ completed_jobs }}</td>
+            <td>{{ cancelled_jobs }}</td>
+            <td>{{ average_platform_rating|floatformat:1 }}</td>
+          </tr>
+        </tbody>
+      </table>
     </div>
-
-    <div class="stat-card">
-      <div class="stat-icon stat-icon-purple"><i class="fa-solid fa-user-gear"></i></div>
-      <div>
-        <div class="stat-value">{{ total_technicians }}</div>
-        <div class="stat-label">Total Technicians</div>
-      </div>
-    </div>
-
-    <div class="stat-card">
-      <div class="stat-icon stat-icon-green"><i class="fa-solid fa-user-check"></i></div>
-      <div>
-        <div class="stat-value">{{ verified_technicians }}</div>
-        <div class="stat-label">Verified Technicians</div>
-      </div>
-    </div>
-
-    <div class="stat-card">
-      <div class="stat-icon stat-icon-amber"><i class="fa-solid fa-hourglass-half"></i></div>
-      <div>
-        <div class="stat-value">{{ pending_verifications }}</div>
-        <div class="stat-label">Pending Verifications</div>
-      </div>
-    </div>
-
-    <div class="stat-card">
-      <div class="stat-icon stat-icon-blue"><i class="fa-solid fa-list-check"></i></div>
-      <div>
-        <div class="stat-value">{{ active_requests }}</div>
-        <div class="stat-label">Active Requests</div>
-      </div>
-    </div>
-
-    <div class="stat-card">
-      <div class="stat-icon stat-icon-green"><i class="fa-solid fa-circle-check"></i></div>
-      <div>
-        <div class="stat-value">{{ completed_jobs }}</div>
-        <div class="stat-label">Completed Jobs</div>
-      </div>
-    </div>
-
-    <div class="stat-card">
-      <div class="stat-icon" style="background-color: var(--danger-light); color: var(--danger);"><i class="fa-solid fa-ban"></i></div>
-      <div>
-        <div class="stat-value">{{ cancelled_jobs }}</div>
-        <div class="stat-label">Cancelled Jobs</div>
-      </div>
-    </div>
-
-    <div class="stat-card">
-      <div class="stat-icon stat-icon-amber"><i class="fa-solid fa-star"></i></div>
-      <div>
-        <div class="stat-value">{{ average_platform_rating|floatformat:1 }}</div>
-        <div class="stat-label">Avg Platform Rating</div>
-      </div>
-    </div>
-  </div>
 
   <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-top: 1rem;">
 
     <div class="card">
       <div class="card-header">
-        <h3 class="card-title"><i class="fa-solid fa-user-clock" style="color: var(--warning);"></i> Pending Technician Approvals</h3>
+        <h3 class="card-title">Pending Technician Approvals</h3>
         <a href="{% url 'admin_verifications' %}" class="btn btn-secondary btn-sm">Review All</a>
       </div>
 
@@ -150,7 +112,7 @@
 
     <div class="card">
       <div class="card-header">
-        <h3 class="card-title"><i class="fa-regular fa-flag" style="color: var(--danger);"></i> Open Inquiries &amp; Complaints</h3>
+        <h3 class="card-title">Open Inquiries &amp; Complaints</h3>
         <a href="{% url 'admin_complaints' %}" class="btn btn-secondary btn-sm">Manage All</a>
       </div>
 

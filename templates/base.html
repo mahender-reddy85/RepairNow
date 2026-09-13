@@ -24,7 +24,7 @@
       <ul class="nav-menu">
         {% if user.is_authenticated %}
           {% if user.is_admin_user %}
-            <li><a href="{% url 'admin_dashboard' %}" class="nav-link"><i class="fa-solid fa-gauge-high"></i> Admin</a></li>
+            <li><a href="{% url 'admin_dashboard' %}" class="nav-link">Admin</a></li>
             <li><a href="{% url 'admin_technicians' %}" class="nav-link">Technicians</a></li>
             <li><a href="{% url 'admin_requests' %}" class="nav-link">Requests</a></li>
           {% elif user.is_technician %}
@@ -60,8 +60,6 @@
               <a href="{% url 'customer_profile' %}" class="btn btn-secondary btn-sm">
                 <i class="fa-regular fa-user"></i> {{ user.customer_profile.full_name|default:user.username }}
               </a>
-            {% else %}
-              <span class="badge badge-info">{{ user.username }} (Admin)</span>
             {% endif %}
             <a href="{% url 'logout' %}" class="btn btn-danger btn-sm" title="Log Out">
               <i class="fa-solid fa-arrow-right-from-bracket"></i>

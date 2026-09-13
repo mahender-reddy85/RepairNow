@@ -7,7 +7,8 @@ from . import views
 
 urlpatterns = [
     path('django-admin/', admin.site.urls),
-    path('admin/dashboard/', admin_views.admin_dashboard, name='admin_dashboard'),
+    path('admin/', admin_views.admin_dashboard, name='admin_dashboard'),
+    path('admin/dashboard/', admin_views.admin_dashboard),
     path('admin/users/', admin_views.admin_users, name='admin_users'),
     path('admin/users/<int:user_id>/toggle/', admin_views.admin_toggle_user_active, name='admin_toggle_user_active'),
     path('admin/technicians/', admin_views.admin_technicians, name='admin_technicians'),
