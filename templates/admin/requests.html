@@ -4,18 +4,18 @@
 
 {% block content %}
 <div class="container">
-  <div class="page-header">
+  <div class="page-header" style="margin-bottom: 1rem;">
     <div class="breadcrumbs">
       <a href="{% url 'admin_dashboard' %}">Dashboard</a>
       <span class="separator">/</span>
       <span class="current">Requests</span>
     </div>
-    <h2>Platform Repair Requests Monitor</h2>
-    <p style="margin: 0;">Supervise all repair requests across various life-cycle stages.</p>
-  </div>
-
-  <div class="card" style="margin-bottom: 1.5rem; padding: 1rem 1.5rem;">
-    <form method="get" style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: center;">
+    <div style="display: flex; justify-content: space-between; align-items: center; gap: 2rem;">
+      <div>
+        <h2>Platform Repair Requests Monitor</h2>
+        <p style="margin: 0;">Supervise all repair requests across various life-cycle stages.</p>
+      </div>
+      <form method="get" style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: center; margin-top: 2.5rem;">
       <input type="text" name="q" value="{{ query }}" placeholder="Search device or customer..." class="form-control" style="width: 240px;">
 
       <select name="status" class="form-select" style="width: auto;">
@@ -41,11 +41,11 @@
       {% if query or status_filter or urgency_filter %}
         <a href="{% url 'admin_requests' %}" class="btn btn-secondary btn-sm">Reset</a>
       {% endif %}
-    </form>
+      </form>
+    </div>
   </div>
 
-  <div class="card">
-    <div class="table-responsive">
+  <div class="table-responsive">
       <table class="table">
         <thead>
           <tr>
@@ -81,6 +81,5 @@
         </tbody>
       </table>
     </div>
-  </div>
 </div>
 {% endblock %}

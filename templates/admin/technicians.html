@@ -4,37 +4,37 @@
 
 {% block content %}
 <div class="container">
-  <div class="page-header">
+  <div class="page-header" style="margin-bottom: 1rem;">
     <div class="breadcrumbs">
       <a href="{% url 'admin_dashboard' %}">Dashboard</a>
       <span class="separator">/</span>
       <span class="current">Technicians</span>
     </div>
-    <h2>Technician Directory &amp; Moderation</h2>
-    <p style="margin: 0;">Review verification status, credentials, and manage service suspension.</p>
+    <div style="display: flex; justify-content: space-between; align-items: center; gap: 2rem;">
+      <div>
+        <h2>Technician Directory &amp; Moderation</h2>
+        <p style="margin: 0;">Review verification status, credentials, and manage service suspension.</p>
+      </div>
+      <form method="get" style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: center; margin-top: 2.5rem;">
+        <input type="text" name="q" value="{{ query }}" placeholder="Search technician name, area or city..." class="form-control" style="width: 280px;">
+
+        <select name="status" class="form-select" style="width: auto;">
+          <option value="">All Verification Statuses</option>
+          <option value="VERIFIED" {% if status_filter == 'VERIFIED' %}selected{% endif %}>Verified</option>
+          <option value="PENDING" {% if status_filter == 'PENDING' %}selected{% endif %}>Pending</option>
+          <option value="REJECTED" {% if status_filter == 'REJECTED' %}selected{% endif %}>Rejected</option>
+          <option value="SUSPENDED" {% if status_filter == 'SUSPENDED' %}selected{% endif %}>Suspended</option>
+        </select>
+
+        <button type="submit" class="btn btn-primary btn-sm">Filter</button>
+        {% if query or status_filter %}
+          <a href="{% url 'admin_technicians' %}" class="btn btn-secondary btn-sm">Reset</a>
+        {% endif %}
+      </form>
+    </div>
   </div>
 
-  <div class="card" style="margin-bottom: 1.5rem; padding: 1rem 1.5rem;">
-    <form method="get" style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: center;">
-      <input type="text" name="q" value="{{ query }}" placeholder="Search technician name, area or city..." class="form-control" style="width: 280px;">
-
-      <select name="status" class="form-select" style="width: auto;">
-        <option value="">All Verification Statuses</option>
-        <option value="VERIFIED" {% if status_filter == 'VERIFIED' %}selected{% endif %}>Verified</option>
-        <option value="PENDING" {% if status_filter == 'PENDING' %}selected{% endif %}>Pending</option>
-        <option value="REJECTED" {% if status_filter == 'REJECTED' %}selected{% endif %}>Rejected</option>
-        <option value="SUSPENDED" {% if status_filter == 'SUSPENDED' %}selected{% endif %}>Suspended</option>
-      </select>
-
-      <button type="submit" class="btn btn-primary btn-sm">Filter</button>
-      {% if query or status_filter %}
-        <a href="{% url 'admin_technicians' %}" class="btn btn-secondary btn-sm">Reset</a>
-      {% endif %}
-    </form>
-  </div>
-
-  <div class="card">
-    <div class="table-responsive">
+  <div class="table-responsive">
       <table class="table">
         <thead>
           <tr>
@@ -105,6 +105,5 @@
         </tbody>
       </table>
     </div>
-  </div>
 </div>
 {% endblock %}
