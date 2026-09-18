@@ -924,10 +924,11 @@ a:hover { color: var(--primary-hover); }
   top: 20px;
   left: 20px;
   height: 4px;
-  background-color: var(--success);
+  /* background-color: var(--success); */
+  background: pink;
   z-index: 2;
   width: 0;
-  animation: progressFill 3s ease-out forwards;
+  /* animation: progressFill 3s ease-out forwards; */
 }
 
 @keyframes progressFill {

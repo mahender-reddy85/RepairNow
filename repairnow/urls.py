@@ -1,12 +1,9 @@
-from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from . import admin_views
-from . import views
 
 urlpatterns = [
-    path('django-admin/', admin.site.urls),
     path('admin/', admin_views.admin_dashboard, name='admin_dashboard'),
     path('admin/dashboard/', admin_views.admin_dashboard),
     path('admin/users/', admin_views.admin_users, name='admin_users'),
@@ -29,7 +26,3 @@ urlpatterns = [
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
-
-handler404 = 'repairnow.views.error_404'
-handler403 = 'repairnow.views.error_403'
-handler500 = 'repairnow.views.error_500'

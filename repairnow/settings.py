@@ -6,25 +6,26 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 load_dotenv(BASE_DIR / '.env')
 
-SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-repairnow-production-key-2026-super-secure')
+SECRET_KEY = os.environ.get('SECRET_KEY')
+if not SECRET_KEY:
+    raise ValueError('SECRET_KEY must be set in environment variables')
+
 DEBUG = os.environ.get('DEBUG', 'True').lower() in ('true', '1', 't')
 
 ALLOWED_HOSTS = ['*']
 
 INSTALLED_APPS = [
-    'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'django_extensions',
-    'accounts.apps.AccountsConfig',
-    'services.apps.ServicesConfig',
-    'technicians.apps.TechniciansConfig',
-    'repairs.apps.RepairsConfig',
-    'reviews.apps.ReviewsConfig',
-    'notifications.apps.NotificationsConfig',
+    'accounts',
+    'services',
+    'technicians',
+    'repairs',
+    'reviews',
+    'notifications',
 ]
 
 MIDDLEWARE = [
@@ -58,13 +59,17 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'repairnow.wsgi.application'
 
-DB_NAME = os.environ.get('DB_NAME', 'repairnow_db')
-DB_USER = os.environ.get('DB_USER', 'root')
-DB_PASSWORD = os.environ.get('DB_PASSWORD', 'likki@8585')
+DB_NAME = os.environ.get('DB_NAME')
+DB_USER = os.environ.get('DB_USER')
+DB_PASSWORD = os.environ.get('DB_PASSWORD')
 DB_HOST = os.environ.get('DB_HOST', '127.0.0.1')
 DB_PORT = os.environ.get('DB_PORT', '3306')
 
 USE_SQLITE = os.environ.get('USE_SQLITE', 'False').lower() in ('true', '1', 't')
+
+if not USE_SQLITE:
+    if not all([DB_NAME, DB_USER, DB_PASSWORD]):
+        raise ValueError('DB_NAME, DB_USER, and DB_PASSWORD must be set in environment variables when not using SQLite')
 
 if USE_SQLITE:
     DATABASES = {
