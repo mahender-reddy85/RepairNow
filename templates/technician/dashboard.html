@@ -1,28 +1,35 @@
 {% extends 'base.html' %}
 
-{% block title %}Technician Dashboard — RepairNow{% endblock %}
+{% block title %}
+  {% if view_mode == 'availability' %}Manage Availability — RepairNow
+  {% else %}Technician Dashboard — RepairNow{% endif %}
+{% endblock %}
 
 {% block content %}
 <div class="container">
+  {% if view_mode == 'list' %}
   <div class="page-header">
-    <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
-      <h2>Welcome, {{ profile.full_name }}</h2>
-      {% if profile.is_verified %}
-        <span class="badge badge-verified"><i class="fa-solid fa-circle-check"></i> Verified Partner</span>
-      {% else %}
-        <span class="badge badge-pending"><i class="fa-solid fa-hourglass-half"></i> Verification Pending</span>
-      {% endif %}
+    <div style="display: flex; align-items: center; justify-content: space-between; gap: 1rem;">
+      <div>
+        <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
+          <h2>Welcome, {{ profile.full_name }}</h2>
+          {% if profile.is_verified %}
+            <span class="badge badge-verified"><i class="fa-solid fa-circle-check"></i> Verified Partner</span>
+          {% else %}
+            <span class="badge badge-pending"><i class="fa-solid fa-hourglass-half"></i> Verification Pending</span>
+          {% endif %}
+        </div>
+        <p>Manage your service availability, customer assignments, and ongoing jobs.</p>
+      </div>
+      <div style="padding: 0.75rem 1.25rem; display: flex; align-items: center; gap: 1rem;">
+        <span style="font-size: 0.88rem; font-weight: 600; color: var(--gray-700);">Current Status:</span>
+        <select id="tech-quick-avail-select" class="form-select" style="width: auto; padding: 0.35rem 0.75rem; font-size: 0.88rem;">
+          <option value="AVAILABLE" {% if profile.availability_status == 'AVAILABLE' %}selected{% endif %}>🟢 Available</option>
+          <option value="BUSY" {% if profile.availability_status == 'BUSY' %}selected{% endif %}>🟡 Busy on Job</option>
+          <option value="OFFLINE" {% if profile.availability_status == 'OFFLINE' %}selected{% endif %}>🔴 Offline</option>
+        </select>
+      </div>
     </div>
-    <p>Manage your service availability, customer assignments, and ongoing jobs.</p>
-  </div>
-
-  <div class="card" style="padding: 0.75rem 1.25rem; display: flex; align-items: center; gap: 1rem; margin-bottom: 2rem;">
-    <span style="font-size: 0.88rem; font-weight: 600; color: var(--gray-700);">Current Status:</span>
-    <select id="tech-quick-avail-select" class="form-select" style="width: auto; padding: 0.35rem 0.75rem; font-size: 0.88rem;">
-      <option value="AVAILABLE" {% if profile.availability_status == 'AVAILABLE' %}selected{% endif %}>🟢 Available</option>
-      <option value="BUSY" {% if profile.availability_status == 'BUSY' %}selected{% endif %}>🟡 Busy on Job</option>
-      <option value="OFFLINE" {% if profile.availability_status == 'OFFLINE' %}selected{% endif %}>🔴 Offline</option>
-    </select>
   </div>
 
   {% if not profile.is_verified %}
@@ -37,40 +44,30 @@
     </div>
   {% endif %}
 
-  <div class="stats-grid">
-    <div class="stat-card">
-      <div class="stat-icon stat-icon-purple"><i class="fa-solid fa-inbox"></i></div>
-      <div>
-        <div class="stat-value">{{ new_requests_count }}</div>
-        <div class="stat-label">New Requests</div>
-      </div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-icon stat-icon-amber"><i class="fa-solid fa-briefcase"></i></div>
-      <div>
-        <div class="stat-value">{{ active_jobs_count }}</div>
-        <div class="stat-label">Active Jobs</div>
-      </div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-icon stat-icon-green"><i class="fa-solid fa-circle-check"></i></div>
-      <div>
-        <div class="stat-value">{{ completed_jobs_count }}</div>
-        <div class="stat-label">Completed Jobs</div>
-      </div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-icon stat-icon-blue"><i class="fa-solid fa-star"></i></div>
-      <div>
-        <div class="stat-value">{{ average_rating|floatformat:1 }} <span style="font-size: 1rem; color: var(--gray-400);">/ 5</span></div>
-        <div class="stat-label">Average Rating ({{ profile.total_reviews_count }} reviews)</div>
-      </div>
-    </div>
+  <div class="table-responsive" style="margin-bottom: 2rem;">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>New Requests</th>
+          <th>Active Jobs</th>
+          <th>Completed Jobs</th>
+          <th>Average Rating</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>{{ new_requests_count }}</td>
+          <td>{{ active_jobs_count }}</td>
+          <td>{{ completed_jobs_count }}</td>
+          <td>{{ average_rating|floatformat:1 }}</td>
+        </tr>
+      </tbody>
+    </table>
   </div>
 
   <div class="card" style="margin-bottom: 2rem;">
     <div class="card-header">
-      <h3 class="card-title"><i class="fa-solid fa-bell" style="color: var(--primary);"></i> Incoming Customer Repair Requests</h3>
+      <h3 class="card-title">Incoming Customer Repair Requests</h3>
       <a href="{% url 'technician_requests' %}" class="btn btn-secondary btn-sm">View All Requests</a>
     </div>
 
@@ -92,18 +89,18 @@
             </p>
 
             <div style="font-size: 0.82rem; color: var(--gray-600); margin-bottom: 1rem;">
-              <div><i class="fa-solid fa-location-dot" style="color: var(--primary);"></i> {{ req.location }}, {{ req.city }}</div>
-              <div><i class="fa-regular fa-clock"></i> Preferred: {{ req.preferred_date|date:"M d" }} ({{ req.preferred_time }})</div>
-              <div><i class="fa-solid fa-wallet"></i> Budget: {% if req.budget %}₹{{ req.budget }}{% else %}Open{% endif %}</div>
+              <div>Location: {{ req.location }}, {{ req.city }}</div>
+              <div>Preferred: {{ req.preferred_date|date:"M d" }} ({{ req.preferred_time }})</div>
+              <div>Budget: {% if req.budget %}₹{{ req.budget }}{% else %}Open{% endif %}</div>
             </div>
 
             <div style="display: flex; gap: 0.5rem;">
               <a href="{% url 'technician_request_detail' req.id %}" class="btn btn-secondary btn-sm" style="flex: 1;">Details</a>
               <a href="{% url 'technician_accept_request' req.id %}" class="btn btn-success btn-sm" style="flex: 1;">
-                <i class="fa-solid fa-check"></i> Accept
+                Accept
               </a>
               <a href="{% url 'technician_reject_request' req.id %}" class="btn btn-danger btn-sm" onclick="return confirm('Reject this repair request?');">
-                <i class="fa-solid fa-xmark"></i> Reject
+                Reject
               </a>
             </div>
           </div>
@@ -120,7 +117,7 @@
 
   <div class="card">
     <div class="card-header">
-      <h3 class="card-title"><i class="fa-solid fa-briefcase" style="color: var(--warning);"></i> In-Progress &amp; Scheduled Jobs</h3>
+      <h3 class="card-title">In-Progress &amp; Scheduled Jobs</h3>
       <a href="{% url 'technician_jobs' %}" class="btn btn-secondary btn-sm">All Jobs</a>
     </div>
 
@@ -144,12 +141,12 @@
                 <td><strong>#{{ job.id }}</strong></td>
                 <td>{{ job.customer.full_name }}</td>
                 <td><strong>{{ job.repair_request.device_name }}</strong></td>
-                <td><i class="fa-solid fa-phone" style="color: var(--primary);"></i> {{ job.customer.phone }}</td>
+                <td>{{ job.customer.phone }}</td>
                 <td>{{ job.repair_request.location }}</td>
                 <td><span class="badge badge-{{ job.status|lower }}">{{ job.get_status_display }}</span></td>
                 <td>
                   <a href="{% url 'technician_job_detail' job.id %}" class="btn btn-primary btn-sm">
-                    Manage Job <i class="fa-solid fa-arrow-right"></i>
+                    Manage Job
                   </a>
                 </td>
               </tr>
@@ -165,5 +162,72 @@
       </div>
     {% endif %}
   </div>
+  {% elif view_mode == 'availability' %}
+  <div class="card" style="padding: 2.5rem; max-width: 800px; margin: 0 auto;">
+    <div class="page-header" style="margin-bottom: 2rem;">
+      <div class="breadcrumbs">
+        <a href="{% url 'technician_dashboard' %}">Dashboard</a>
+        <span class="separator">/</span>
+        <span class="current">Availability</span>
+      </div>
+      <h2>Availability &amp; Working Hours</h2>
+      <p style="margin: 0;">Configure your real-time status and standard weekly working hours. The matching engine factors this into your availability score.</p>
+    </div>
+
+    <form method="post">
+      {% csrf_token %}
+
+      <div style="background: var(--gray-50); border: 1px solid var(--gray-200); border-radius: var(--radius-md); padding: 1.25rem; margin-bottom: 2rem;">
+        <h4 style="margin-bottom: 0.5rem; color: var(--gray-900);">Current Operational Status</h4>
+        <div style="display: flex; gap: 1rem; align-items: center;">
+          <select name="availability_status" class="form-select" style="max-width: 250px;">
+            <option value="AVAILABLE" {% if profile.availability_status == 'AVAILABLE' %}selected{% endif %}>🟢 Available for New Jobs</option>
+            <option value="BUSY" {% if profile.availability_status == 'BUSY' %}selected{% endif %}>🟡 Busy (Engaged on Site)</option>
+            <option value="OFFLINE" {% if profile.availability_status == 'OFFLINE' %}selected{% endif %}>🔴 Offline (Not Taking Requests)</option>
+          </select>
+          <span style="font-size: 0.85rem; color: var(--gray-500);">Instant status overrides weekly schedule for emergency requests.</span>
+        </div>
+      </div>
+
+      <h4 style="margin-bottom: 1rem; color: var(--gray-900);">Weekly Working Schedule</h4>
+
+      <div class="table-responsive" style="margin-bottom: 2rem;">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Day of Week</th>
+              <th>Available?</th>
+              <th>Starting Time</th>
+              <th>Ending Time</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for day_name, slot in schedule %}
+              <tr>
+                <td><strong>{{ day_name }}</strong></td>
+                <td>
+                  <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                    <input type="checkbox" name="avail_{{ slot.day_of_week }}" {% if slot.is_available %}checked{% endif %}>
+                    <span>Available</span>
+                  </label>
+                </td>
+                <td>
+                  <input type="time" name="start_{{ slot.day_of_week }}" value="{{ slot.start_time|time:'H:i' }}" class="form-control" style="width: 140px; padding: 0.35rem 0.6rem;">
+                </td>
+                <td>
+                  <input type="time" name="end_{{ slot.day_of_week }}" value="{{ slot.end_time|time:'H:i' }}" class="form-control" style="width: 140px; padding: 0.35rem 0.6rem;">
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-lg">
+        <i class="fa-solid fa-save"></i> Save Availability Schedule
+      </button>
+    </form>
+  </div>
+  {% endif %}
 </div>
 {% endblock %}

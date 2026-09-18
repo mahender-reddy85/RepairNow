@@ -46,6 +46,12 @@
                   <i class="fa-solid fa-check"></i>
                 </a>
               {% endif %}
+              <form method="post" action="{% url 'delete_notification' n.id %}" style="display: inline;">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger btn-sm" title="Delete notification" onclick="return confirm('Delete this notification?');">
+                  <i class="fa-solid fa-trash"></i>
+                </button>
+              </form>
             </div>
           </li>
         {% endfor %}

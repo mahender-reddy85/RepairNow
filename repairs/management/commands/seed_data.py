@@ -20,7 +20,7 @@ class Command(BaseCommand):
         self.stdout.write(self.style.NOTICE("Seeding RepairNow database..."))
 
         admin_user, created = User.objects.get_or_create(
-            username='admin',
+            username='repairnow',
             defaults={
                 'email': 'admin@repairnow.com',
                 'role': User.ROLE_ADMIN,
@@ -29,9 +29,9 @@ class Command(BaseCommand):
                 'phone': '9848022338',
             }
         )
-        admin_user.set_password('admin123')
+        admin_user.set_password('123456')
         admin_user.save()
-        self.stdout.write(self.style.SUCCESS("[OK] Admin user created: admin / admin123"))
+        self.stdout.write(self.style.SUCCESS("[OK] Admin user created: repairnow / 123456"))
 
         categories_data = [
             ('AC Repair', 'fa-snowflake', 'Split and window AC servicing, gas refilling, compressor troubleshooting, and PCB repair.'),

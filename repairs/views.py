@@ -93,7 +93,7 @@ def customer_repair_create(request):
         }
         form = RepairRequestForm(initial=initial)
 
-    return render(request, 'customer/repair_create.html', {'form': form})
+    return render(request, 'customer/repair.html', {'form': form, 'view_mode': 'create'})
 
 
 @login_required
@@ -101,7 +101,7 @@ def customer_repair_create(request):
 def customer_repair_list(request):
     profile = request.user.customer_profile
     requests_qs = RepairRequest.objects.filter(customer=profile).order_by('-created_at')
-    return render(request, 'customer/repair_list.html', {'requests': requests_qs})
+    return render(request, 'customer/repair.html', {'requests': requests_qs, 'view_mode': 'list'})
 
 
 @login_required
@@ -114,9 +114,10 @@ def customer_repair_detail(request, request_id):
         return HttpResponseForbidden("You do not have permission to view this request.")
 
     job = getattr(repair_request, 'job', None)
-    return render(request, 'customer/repair_detail.html', {
+    return render(request, 'customer/repair.html', {
         'repair_request': repair_request,
         'job': job,
+        'view_mode': 'detail',
     })
 
 

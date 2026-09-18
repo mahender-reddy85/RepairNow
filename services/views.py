@@ -1,9 +1,10 @@
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render
 from .models import ServiceCategory
 from technicians.models import TechnicianProfile
 from repairs.models import Job
 
 def home(request):
+    ServiceCategory.ensure_default_categories()
     categories = ServiceCategory.objects.filter(is_active=True).order_by('name')
     verified_tech_count = TechnicianProfile.objects.filter(
         verification_status=TechnicianProfile.VERIFICATION_VERIFIED,
@@ -25,6 +26,7 @@ def about(request):
 
 
 def services_list(request):
+    ServiceCategory.ensure_default_categories()
     query = request.GET.get('q', '').strip()
     categories = ServiceCategory.objects.filter(is_active=True)
     if query:
@@ -33,18 +35,4 @@ def services_list(request):
     return render(request, 'services.html', {
         'categories': categories,
         'query': query,
-    })
-
-
-def service_detail(request, slug):
-    category = get_object_or_404(ServiceCategory, slug=slug, is_active=True)
-    technicians = TechnicianProfile.objects.filter(
-        skills__service_category=category,
-        verification_status=TechnicianProfile.VERIFICATION_VERIFIED,
-        user__is_active=True
-    ).distinct()
-
-    return render(request, 'service_detail.html', {
-        'category': category,
-        'technicians': technicians,
     })

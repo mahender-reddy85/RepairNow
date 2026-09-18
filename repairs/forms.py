@@ -5,6 +5,12 @@ from services.models import ServiceCategory
 
 
 class RepairRequestForm(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        ServiceCategory.ensure_default_categories()
+        self.fields['service_category'].queryset = ServiceCategory.objects.filter(is_active=True).order_by('name')
+        self.fields['service_category'].empty_label = 'Select a service category'
+
     preferred_date = forms.DateField(
         widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
         help_text="Select when you need the technician"
@@ -12,9 +18,9 @@ class RepairRequestForm(forms.ModelForm):
 
     PREFERRED_TIME_CHOICES = [
         ('', 'Select preferred time'),
-        ('Morning (8 AM - 12 PM)', 'Morning (8 AM - 12 PM)'),
-        ('Afternoon (12 PM - 4 PM)', 'Afternoon (12 PM - 4 PM)'),
-        ('Evening (4 PM - 8 PM)', 'Evening (4 PM - 8 PM)'),
+        ('Morning', 'Morning (8 AM - 12 PM)'),
+        ('Afternoon', 'Afternoon (12 PM - 4 PM)'),
+        ('Evening', 'Evening (4 PM - 8 PM)'),
     ]
 
     preferred_time = forms.ChoiceField(

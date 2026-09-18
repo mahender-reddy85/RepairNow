@@ -29,3 +29,15 @@ def mark_all_notifications_read(request):
     if request.user.is_customer:
         return redirect('customer_notifications')
     return redirect('technician_notifications')
+
+
+@login_required
+def delete_notification(request, notif_id):
+    notif = get_object_or_404(Notification, id=notif_id, user=request.user)
+    if request.method == 'POST':
+        notif.delete()
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            return JsonResponse({'success': True, 'id': notif_id})
+    if request.user.is_customer:
+        return redirect('customer_notifications')
+    return redirect('technician_notifications')

@@ -11,6 +11,7 @@ from technicians.models import TechnicianProfile, TechnicianSkill
 from repairs.models import RepairRequest, Job, JobStatusHistory, TechnicianMatch
 from repairs.matching import haversine_distance, calculate_distance_score, calculate_cost_score, find_and_rank_technicians
 from reviews.models import Review
+from notifications.models import Notification
 
 User = get_user_model()
 
@@ -61,6 +62,29 @@ class RepairNowTestSuite(TestCase):
         TechnicianSkill.objects.create(technician=self.tech_profile2, service_category=self.cat_washer)
 
         self.admin_user = User.objects.create_superuser(username='admin_test', password='password123', role=User.ROLE_ADMIN)
+
+    def test_default_service_categories_are_created_when_missing(self):
+        ServiceCategory.objects.all().delete()
+
+        created = ServiceCategory.ensure_default_categories()
+
+        self.assertGreater(len(created), 0)
+        self.assertTrue(ServiceCategory.objects.filter(is_active=True).exists())
+        self.assertTrue(ServiceCategory.objects.filter(name='AC Repair').exists())
+
+    def test_user_can_delete_notification(self):
+        self.client.login(username='cust1', password='password123')
+        notif = Notification.objects.create(
+            user=self.cust_user1,
+            title='Test notification',
+            message='Delete me',
+            link='/customer/dashboard/'
+        )
+
+        res = self.client.post(reverse('delete_notification', args=[notif.id]))
+
+        self.assertEqual(res.status_code, 302)
+        self.assertFalse(Notification.objects.filter(id=notif.id).exists())
 
     def test_customer_registration(self):
         res = self.client.post(reverse('register_customer'), {

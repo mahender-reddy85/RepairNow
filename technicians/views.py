@@ -35,6 +35,7 @@ def technician_dashboard(request):
         'average_rating': profile.average_rating,
         'new_requests': new_requests[:5],
         'active_jobs': active_jobs[:5],
+        'view_mode': 'list',
     }
     return render(request, 'technician/dashboard.html', context)
 
@@ -94,11 +95,12 @@ def technician_availability(request):
                 slot.end_time = e_time
                 slot.save()
         messages.success(request, "Weekly schedule updated successfully.")
-        return redirect('technician_availability')
+        return redirect('technician_dashboard')
 
-    return render(request, 'technician/availability.html', {
+    return render(request, 'technician/dashboard.html', {
         'profile': profile,
         'schedule': schedule,
+        'view_mode': 'availability',
     })
 
 
@@ -139,6 +141,7 @@ def technician_requests(request):
         'selected_status': status_filter,
         'selected_urgency': urgency_filter,
         'selected_service': service_filter,
+        'view_mode': 'list',
     })
 
 
@@ -150,9 +153,10 @@ def technician_request_detail(request, request_id):
     
     job = getattr(repair_request, 'job', None)
 
-    return render(request, 'technician/request_detail.html', {
+    return render(request, 'technician/requests.html', {
         'repair_request': repair_request,
         'job': job,
+        'view_mode': 'detail',
     })
 
 
@@ -232,7 +236,7 @@ def technician_jobs(request):
     if status_filter:
         jobs = jobs.filter(status=status_filter)
 
-    return render(request, 'technician/jobs.html', {'jobs': jobs, 'selected_status': status_filter})
+    return render(request, 'technician/jobs.html', {'jobs': jobs, 'selected_status': status_filter, 'view_mode': 'list'})
 
 
 @login_required
@@ -242,9 +246,10 @@ def technician_job_detail(request, job_id):
     job = get_object_or_404(Job, id=job_id, technician=profile)
     history = job.status_history.all().order_by('timestamp')
     
-    return render(request, 'technician/job_detail.html', {
+    return render(request, 'technician/jobs.html', {
         'job': job,
         'history': history,
+        'view_mode': 'detail',
     })
 
 

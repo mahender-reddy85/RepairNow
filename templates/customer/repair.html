@@ -1,0 +1,300 @@
+{% extends 'base.html' %}
+
+{% block title %}
+  {% if view_mode == 'create' %}Create Repair Request — RepairNow
+  {% elif view_mode == 'detail' %}Repair Request #{{ repair_request.id }} — RepairNow
+  {% elif view_mode == 'complaint' %}Raise Complaint / Contact Support — RepairNow
+  {% else %}My Repair Requests — RepairNow{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="container">
+  {% if view_mode == 'list' %}
+    <div class="page-header">
+      <div class="breadcrumbs">
+        <a href="{% url 'customer_dashboard' %}">Dashboard</a>
+        <span class="separator">/</span>
+        <span class="current">My Repairs</span>
+      </div>
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h2>My Repair Requests</h2>
+        <a href="{% url 'customer_repair_create' %}" class="btn btn-outline-primary">
+          <i class="fa-solid fa-plus-circle"></i> New Repair Request
+        </a>
+      </div>
+      <p style="margin: 0;">Overview of all your submitted repair requests and active repairs.</p>
+    </div>
+
+    {% if requests %}
+      <div class="table-responsive">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Device / Equipment</th>
+              <th>Category</th>
+              <th>Urgency</th>
+              <th>Technician</th>
+              <th>Status</th>
+              <th>Preferred Date</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for req in requests %}
+              <tr>
+                <td><strong>#{{ req.id }}</strong></td>
+                <td><strong>{{ req.device_name }}</strong></td>
+                <td>{{ req.service_category.name }}</td>
+                <td><span class="badge badge-urgency-{{ req.urgency|lower }}">{{ req.get_urgency_display|truncatewords:2 }}</span></td>
+                <td>
+                  {% if req.selected_technician %}
+                    {{ req.selected_technician.full_name }}
+                  {% else %}
+                    <span style="color: var(--gray-400); font-style: italic;">Not Selected</span>
+                  {% endif %}
+                </td>
+                <td>
+                  {% if req.selected_technician %}
+                    <i class="fa-solid fa-check" style="color: var(--success); font-size: 1rem;" title="Technician selected"></i>
+                  {% else %}
+                    <i class="fa-solid fa-xmark" style="color: var(--danger); font-size: 1rem;" title="No technician selected"></i>
+                  {% endif %}
+                </td>
+                <td>{{ req.preferred_date|date:"M d, Y" }}</td>
+                <td>
+                  <div style="display: flex; gap: 0.35rem;">
+                    {% if not req.selected_technician %}
+                      <a href="{% url 'customer_repair_matches' req.id %}" class="btn btn-primary btn-sm">Matches</a>
+                    {% else %}
+                      <a href="{% url 'customer_repair_track' req.id %}" class="btn btn-outline-primary btn-sm">Track</a>
+                    {% endif %}
+                    <a href="{% url 'customer_repair_detail' req.id %}" class="btn btn-secondary btn-sm">Details</a>
+                  </div>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div style="text-align: center; padding: 3rem;">
+        <i class="fa-solid fa-clipboard-list" style="font-size: 2.5rem; color: var(--gray-400); margin-bottom: 1rem;"></i>
+        <h3>No Repair Requests Found</h3>
+        <p>You haven't submitted any repair requests yet.</p>
+        <a href="{% url 'customer_repair_create' %}" class="btn btn-primary">Book a Repair Now</a>
+      </div>
+    {% endif %}
+
+  {% elif view_mode == 'detail' %}
+    <div class="container container-narrow">
+      <div style="margin-bottom: 1.5rem;">
+        <a href="{% url 'customer_repair_list' %}" class="btn btn-secondary btn-sm">
+          <i class="fa-solid fa-arrow-left"></i> Back to Requests
+        </a>
+      </div>
+
+      <div class="card" style="padding: 2rem;">
+        <div class="card-header">
+          <div>
+            <span class="badge badge-urgency-{{ repair_request.urgency|lower }}">{{ repair_request.get_urgency_display }}</span>
+            <h2 style="margin-top: 0.5rem;">{{ repair_request.device_name }}</h2>
+            <div style="font-size: 0.88rem; color: var(--gray-500);">Request #{{ repair_request.id }} &bull; Submitted {{ repair_request.created_at|date:"M d, Y h:i A" }}</div>
+          </div>
+          <span class="badge badge-{{ repair_request.status|lower }}" style="font-size: 0.95rem;">{{ repair_request.get_status_display }}</span>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
+          <div>
+            <h4 style="color: var(--gray-700); margin-bottom: 0.5rem;">Category</h4>
+            <p>{{ repair_request.service_category.name }}</p>
+          </div>
+
+          <div>
+            <h4 style="color: var(--gray-700); margin-bottom: 0.5rem;">Location</h4>
+            <p>{{ repair_request.location }}, {{ repair_request.city }}</p>
+          </div>
+
+          <div>
+            <h4 style="color: var(--gray-700); margin-bottom: 0.5rem;">Preferred Schedule</h4>
+            <p>{{ repair_request.preferred_date|date:"M d, Y" }} &bull; {{ repair_request.preferred_time }}</p>
+          </div>
+
+          <div>
+            <h4 style="color: var(--gray-700); margin-bottom: 0.5rem;">Target Budget</h4>
+            <p>{% if repair_request.budget %}₹{{ repair_request.budget }}{% else %}Not specified{% endif %}</p>
+          </div>
+        </div>
+
+        <div style="margin-bottom: 1.5rem;">
+          <h4 style="color: var(--gray-700); margin-bottom: 0.5rem;">Problem Description</h4>
+          <div style="background: var(--gray-50); padding: 1rem; border-radius: var(--radius-md); border: 1px solid var(--gray-200);">
+            {{ repair_request.problem_description|linebreaks }}
+          </div>
+        </div>
+
+        {% if repair_request.problem_image %}
+          <div style="margin-bottom: 1.5rem;">
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 0.5rem;">
+              <h4 style="color: var(--gray-700); margin: 0;">Problem Image</h4>
+              <a href="{{ repair_request.problem_image.url }}" target="_blank" class="btn btn-secondary btn-sm" title="Preview fault image">
+                <i class="fa-regular fa-image"></i> Preview
+              </a>
+            </div>
+            <img src="{{ repair_request.problem_image.url }}" alt="Problem Photo" style="max-width: 100%; border-radius: var(--radius-md); border: 1px solid var(--gray-200); max-height: 350px; object-fit: contain;">
+          </div>
+        {% endif %}
+
+        <div style="display: flex; gap: 1rem; margin-top: 1.5rem; border-top: 1px solid var(--gray-200); padding-top: 1.25rem;">
+          {% if not repair_request.selected_technician %}
+            <a href="{% url 'customer_repair_matches' repair_request.id %}" class="btn btn-primary">
+              <i class="fa-solid fa-users"></i> View Ranked Matches
+            </a>
+          {% else %}
+            <a href="{% url 'customer_repair_track' repair_request.id %}" class="btn btn-outline-primary">
+              <i class="fa-solid fa-location-crosshairs"></i> Track Live Status
+            </a>
+          {% endif %}
+
+          {% if repair_request.can_be_cancelled %}
+            <a href="{% url 'customer_repair_cancel' repair_request.id %}" class="btn btn-danger" onclick="return confirm('Cancel this request?');">
+              <i class="fa-solid fa-ban"></i> Cancel Request
+            </a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+  {% elif view_mode == 'create' %}
+    <div class="card" style="padding: 2.5rem;">
+      <div class="page-header" style="margin-bottom: 2rem;">
+        <div class="breadcrumbs">
+          <a href="{% url 'customer_dashboard' %}">Dashboard</a>
+          <span class="separator">/</span>
+          <span class="current">Create Repair Request</span>
+        </div>
+        <h2>Create Repair Request</h2>
+        <p style="margin: 0;">Fill in details about your malfunctioning appliance or equipment. We will match you with top-rated local technicians immediately.</p>
+      </div>
+
+      <form method="post" enctype="multipart/form-data" novalidate>
+        {% csrf_token %}
+
+        <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.5rem;">
+          <div class="form-group">
+            <label class="form-label" for="{{ form.service_category.id_for_label }}">Service / Appliance Category *</label>
+            {{ form.service_category }}
+            {% if form.service_category.errors %}<div class="form-error">{{ form.service_category.errors.0 }}</div>{% endif %}
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="{{ form.device_name.id_for_label }}">Device / Equipment Model *</label>
+            {{ form.device_name }}
+            {% if form.device_name.errors %}<div class="form-error">{{ form.device_name.errors.0 }}</div>{% endif %}
+          </div>
+
+          <div class="form-group" style="grid-column: 1 / -1;">
+            <label class="form-label" for="{{ form.problem_description.id_for_label }}">Problem Description * (Please provide as much context as possible [symptoms, sounds, errors shown])</label>
+            {{ form.problem_description }}
+            {% if form.problem_description.errors %}<div class="form-error">{{ form.problem_description.errors.0 }}</div>{% endif %}
+          </div>
+
+          <div class="form-group" style="grid-column: 1 / -1;">
+            <label class="form-label" for="{{ form.problem_image.id_for_label }}">Upload Problem / Device Photo (Optional)</label>
+            {{ form.problem_image }}
+            <div class="form-text">Helps the technician diagnose the fault faster.</div>
+            {% if form.problem_image.errors %}<div class="form-error">{{ form.problem_image.errors.0 }}</div>{% endif %}
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="{{ form.location.id_for_label }}">Repair Location / Address *</label>
+            {{ form.location }}
+            {% if form.location.errors %}<div class="form-error">{{ form.location.errors.0 }}</div>{% endif %}
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="{{ form.city.id_for_label }}">City *</label>
+            {{ form.city }}
+            {% if form.city.errors %}<div class="form-error">{{ form.city.errors.0 }}</div>{% endif %}
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="{{ form.urgency.id_for_label }}">Urgency Level *</label>
+            {{ form.urgency }}
+            {% if form.urgency.errors %}<div class="form-error">{{ form.urgency.errors.0 }}</div>{% endif %}
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="{{ form.preferred_date.id_for_label }}">Preferred Date *</label>
+            {{ form.preferred_date }}
+            {% if form.preferred_date.errors %}<div class="form-error">{{ form.preferred_date.errors.0 }}</div>{% endif %}
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="{{ form.preferred_time.id_for_label }}">Preferred Time *</label>
+            {{ form.preferred_time }}
+            {% if form.preferred_time.errors %}<div class="form-error">{{ form.preferred_time.errors.0 }}</div>{% endif %}
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="{{ form.budget.id_for_label }}">Expected Budget (Optional, in ₹)</label>
+            {{ form.budget }}
+            <div class="form-text">Leave blank if open to technician standard quotes.</div>
+            {% if form.budget.errors %}<div class="form-error">{{ form.budget.errors.0 }}</div>{% endif %}
+          </div>
+        </div>
+
+        <div style="margin-top: 2rem; display: flex; gap: 1rem; align-items: center;">
+          <button type="submit" class="btn btn-secondary btn-lg">
+            Find Matching Technicians <i class="fa-solid fa-arrow-right"></i>
+          </button>
+          <a href="{% url 'customer_dashboard' %}" class="btn btn-secondary">Cancel</a>
+        </div>
+      </form>
+    </div>
+
+  {% elif view_mode == 'complaint' %}
+    <div class="container container-narrow">
+      <div class="card" style="padding: 2.5rem;">
+        <div style="margin-bottom: 2rem; border-bottom: 1px solid var(--gray-200); padding-bottom: 1rem;">
+          <span class="badge badge-warning" style="margin-bottom: 0.5rem;"><i class="fa-regular fa-flag"></i> Support &amp; Complaints</span>
+          <h2>Submit an Inquiry or Complaint</h2>
+          <p style="margin: 0;">Our administrative moderation team reviews all customer &amp; technician feedback to resolve disputes fairly.</p>
+        </div>
+
+        {% if job %}
+          <div style="background: var(--gray-50); border: 1px solid var(--gray-200); border-radius: var(--radius-md); padding: 1rem; margin-bottom: 1.5rem;">
+            <strong>Related Repair:</strong> #{{ job.repair_request.id }} — {{ job.repair_request.device_name }}
+            <div style="font-size: 0.85rem; color: var(--gray-600); margin-top: 0.25rem;">
+              Technician: {{ job.technician.full_name }} &bull; Customer: {{ job.customer.full_name }}
+            </div>
+          </div>
+        {% endif %}
+
+        <form method="post" novalidate>
+          {% csrf_token %}
+
+          <div class="form-group">
+            <label class="form-label" for="{{ form.subject.id_for_label }}">Subject *</label>
+            {{ form.subject }}
+            {% if form.subject.errors %}<div class="form-error">{{ form.subject.errors.0 }}</div>{% endif %}
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="{{ form.description.id_for_label }}">Detailed Explanation *</label>
+            {{ form.description }}
+            {% if form.description.errors %}<div class="form-error">{{ form.description.errors.0 }}</div>{% endif %}
+          </div>
+
+          <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+            <button type="submit" class="btn btn-outline-primary">
+              <i class="fa-solid fa-paper-plane"></i> Submit to Admin Team
+            </button>
+            <a href="javascript:history.back()" class="btn btn-secondary">Cancel</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

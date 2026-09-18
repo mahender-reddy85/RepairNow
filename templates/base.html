@@ -11,9 +11,146 @@
 </head>
 <body>
 
-{% include "components/navbar.html" %}
-{% include "components/mobile_drawer.html" %}
-{% include "components/messages.html" %}
+<header class="navbar">
+  <div class="container nav-container">
+    <a href="{% url 'home' %}" class="brand-logo">
+      <span class="brand-logo-name">RepairNow</span>
+    </a>
+
+    <button class="mobile-toggle" aria-label="Toggle navigation">
+      <i class="fa-solid fa-bars"></i>
+    </button>
+
+    <ul class="nav-menu">
+      {% if request.path == '/' %}
+        <li><a href="{% url 'home' %}" class="nav-link">Home</a></li>
+        <li><a href="{% url 'services_list' %}" class="nav-link">Services</a></li>
+        <li><a href="{% url 'about' %}" class="nav-link">About</a></li>
+        {% if user.is_authenticated %}
+          <li><a href="{% url 'logout' %}" class="btn btn-danger btn-sm">Log Out</a></li>
+        {% else %}
+          <li><a href="{% url 'login' %}" class="btn btn-secondary btn-sm">Sign In</a></li>
+        {% endif %}
+      {% elif user.is_authenticated %}
+        {% if user.is_admin_user %}
+          <li><a href="{% url 'admin_dashboard' %}" class="nav-link">Admin</a></li>
+          <li><a href="{% url 'admin_technicians' %}" class="nav-link">Technicians</a></li>
+          <li><a href="{% url 'admin_requests' %}" class="nav-link">Requests</a></li>
+        {% elif user.is_technician %}
+          <li><a href="{% url 'technician_dashboard' %}" class="nav-link">Dashboard</a></li>
+          <li><a href="{% url 'technician_requests' %}" class="nav-link">Requests</a></li>
+          <li><a href="{% url 'technician_jobs' %}" class="nav-link">Jobs</a></li>
+          <li><a href="{% url 'technician_history' %}" class="nav-link">History</a></li>
+        {% else %}
+          <li><a href="{% url 'customer_dashboard' %}" class="nav-link"> Dashboard</a></li>
+          <li><a href="{% url 'customer_repair_list' %}" class="nav-link">My Repairs</a></li>
+          <li><a href="{% url 'customer_history' %}" class="nav-link">History</a></li>
+        {% endif %}
+
+        <li>
+          {% if user.is_technician %}
+            <a href="{% url 'technician_notifications' %}" class="nav-link" style="position: relative;">
+          {% else %}
+            <a href="{% url 'customer_notifications' %}" class="nav-link" style="position: relative;">
+          {% endif %}
+            <i class="fa-regular fa-bell"></i>
+            {% if unread_notifications_count > 0 %}
+              <span class="badge badge-danger unread-count-badge" style="position: absolute; top: -5px; right: -5px; padding: 2px 6px; font-size: 0.7rem;">
+                {{ unread_notifications_count }}
+              </span>
+            {% endif %}
+          </a>
+        </li>
+
+        <li style="display: flex; align-items: center; gap: 0.5rem; margin-left: 0.5rem;">
+          {% if user.is_technician %}
+            <a href="{% url 'technician_profile' %}" class="btn btn-secondary btn-sm">
+              <i class="fa-regular fa-user"></i> {{ user.technician_profile.full_name|default:user.username }}
+            </a>
+          {% elif user.is_customer %}
+            <a href="{% url 'customer_profile' %}" class="btn btn-secondary btn-sm">
+              <i class="fa-regular fa-user"></i> {{ user.customer_profile.full_name|default:user.username }}
+            </a>
+          {% endif %}
+          <a href="{% url 'logout' %}" class="btn btn-danger btn-sm" title="Log Out">
+            <i class="fa-solid fa-arrow-right-from-bracket"></i>
+          </a>
+        </li>
+      {% else %}
+        <li><a href="{% url 'home' %}" class="nav-link">Home</a></li>
+        <li><a href="{% url 'services_list' %}" class="nav-link">Services</a></li>
+        <li><a href="{% url 'about' %}" class="nav-link">About</a></li>
+        <li><a href="{% url 'login' %}" class="btn btn-secondary btn-sm">Sign In</a></li>
+      {% endif %}
+    </ul>
+  </div>
+</header>
+
+<div class="mobile-drawer">
+  <div class="mobile-drawer-content">
+    <div class="mobile-drawer-header">
+      <a href="{% url 'home' %}" class="brand-logo">
+        <span class="brand-logo-name">RepairNow</span>
+      </a>
+      <button class="mobile-drawer-close" aria-label="Close navigation">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+    <nav class="mobile-drawer-nav">
+      {% if request.path == '/' %}
+        <a href="{% url 'home' %}" class="nav-link">Home</a>
+        <a href="{% url 'services_list' %}" class="nav-link">Services</a>
+        <a href="{% url 'about' %}" class="nav-link">About</a>
+        {% if user.is_authenticated %}
+          <a href="{% url 'logout' %}" class="nav-link" style="color: var(--danger);"><i class="fa-solid fa-arrow-right-from-bracket"></i> Log Out</a>
+        {% else %}
+          <a href="{% url 'login' %}" class="nav-link">Sign In</a>
+          <a href="{% url 'register_customer' %}" class="nav-link">Register as Customer</a>
+          <a href="{% url 'register_technician' %}" class="nav-link">Join as Technician</a>
+        {% endif %}
+      {% elif user.is_authenticated %}
+        {% if user.is_admin_user %}
+          <a href="{% url 'admin_dashboard' %}" class="nav-link"><i class="fa-solid fa-gauge-high"></i> Admin Dashboard</a>
+          <a href="{% url 'admin_technicians' %}" class="nav-link">Technicians</a>
+          <a href="{% url 'admin_requests' %}" class="nav-link">Requests</a>
+        {% elif user.is_technician %}
+          <a href="{% url 'technician_dashboard' %}" class="nav-link">Dashboard</a>
+          <a href="{% url 'technician_requests' %}" class="nav-link">Requests</a>
+          <a href="{% url 'technician_jobs' %}" class="nav-link">Jobs</a>
+          <a href="{% url 'technician_history' %}" class="nav-link">History</a>
+          <a href="{% url 'technician_availability' %}" class="nav-link">Availability</a>
+        {% else %}
+          <a href="{% url 'customer_dashboard' %}" class="nav-link"> Dashboard</a>
+          <a href="{% url 'customer_repair_list' %}" class="nav-link">My Repairs</a>
+          <a href="{% url 'customer_history' %}" class="nav-link">History</a>
+        {% endif %}
+
+        {% if user.is_technician %}
+          <a href="{% url 'technician_notifications' %}" class="nav-link"><i class="fa-regular fa-bell"></i> Notifications</a>
+        {% else %}
+          <a href="{% url 'customer_notifications' %}" class="nav-link"><i class="fa-regular fa-bell"></i> Notifications</a>
+        {% endif %}
+
+        <a href="{% url 'logout' %}" class="nav-link" style="color: var(--danger);"><i class="fa-solid fa-arrow-right-from-bracket"></i> Log Out</a>
+      {% else %}
+        <a href="{% url 'login' %}" class="nav-link">Sign In</a>
+        <a href="{% url 'register_customer' %}" class="nav-link">Register as Customer</a>
+        <a href="{% url 'register_technician' %}" class="nav-link">Join as Technician</a>
+      {% endif %}
+    </nav>
+  </div>
+</div>
+
+{% if messages %}
+  <div class="container" style="margin-top: 1rem;">
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }}">
+        <span>{{ message }}</span>
+        <button type="button" style="background: none; border: none; cursor: pointer; color: inherit;" onclick="this.parentElement.remove();">&times;</button>
+      </div>
+    {% endfor %}
+  </div>
+{% endif %}
 
   <main class="main-content">
     {% block content %}{% endblock %}

@@ -87,6 +87,7 @@ class TechnicianRegistrationForm(forms.ModelForm):
     service_area = forms.CharField(initial='Vijayawada Central, Benz Circle', widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Operating areas / localities'}))
     address = forms.CharField(widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Workshop / Base Address'}))
     city = forms.CharField(initial='Vijayawada', widget=forms.TextInput(attrs={'class': 'form-control'}))
+    state = forms.CharField(initial='Andhra Pradesh', widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'State'}))
     bio = forms.CharField(required=False, widget=forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Brief intro and experience summary'}))
     profile_image = forms.ImageField(required=False, widget=forms.FileInput(attrs={'class': 'form-control profile-image-input', 'accept': 'image/*'}))
     
@@ -142,6 +143,7 @@ class TechnicianRegistrationForm(forms.ModelForm):
                 service_area=self.cleaned_data['service_area'],
                 address=self.cleaned_data['address'],
                 city=self.cleaned_data['city'],
+                state=self.cleaned_data['state'],
                 bio=self.cleaned_data.get('bio', ''),
                 profile_image=self.cleaned_data.get('profile_image'),
                 estimated_cost_min=self.cleaned_data['estimated_cost_min'],

@@ -74,7 +74,8 @@ def submit_complaint(request, job_id=None):
     else:
         form = ComplaintForm()
 
-    return render(request, 'complaint_create.html', {
+    return render(request, 'customer/repair.html', {
         'form': form,
         'job': job,
+        'view_mode': 'complaint',
     })
