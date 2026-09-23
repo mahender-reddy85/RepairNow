@@ -47,21 +47,6 @@
           <li><a href="{% url 'customer_history' %}" class="nav-link">History</a></li>
         {% endif %}
 
-        <li>
-          {% if user.is_technician %}
-            <a href="{% url 'technician_notifications' %}" class="nav-link" style="position: relative;">
-          {% else %}
-            <a href="{% url 'customer_notifications' %}" class="nav-link" style="position: relative;">
-          {% endif %}
-            <i class="fa-regular fa-bell"></i>
-            {% if unread_notifications_count > 0 %}
-              <span class="badge badge-danger unread-count-badge" style="position: absolute; top: -5px; right: -5px; padding: 2px 6px; font-size: 0.7rem;">
-                {{ unread_notifications_count }}
-              </span>
-            {% endif %}
-          </a>
-        </li>
-
         <li style="display: flex; align-items: center; gap: 0.5rem; margin-left: 0.5rem;">
           {% if user.is_technician %}
             <a href="{% url 'technician_profile' %}" class="btn btn-secondary btn-sm">
@@ -126,9 +111,9 @@
         {% endif %}
 
         {% if user.is_technician %}
-          <a href="{% url 'technician_notifications' %}" class="nav-link"><i class="fa-regular fa-bell"></i> Notifications</a>
+          <a href="{% url 'technician_notifications' %}" class="nav-link">Notifications</a>
         {% else %}
-          <a href="{% url 'customer_notifications' %}" class="nav-link"><i class="fa-regular fa-bell"></i> Notifications</a>
+          <a href="{% url 'customer_notifications' %}" class="nav-link">Notifications</a>
         {% endif %}
 
         <a href="{% url 'logout' %}" class="nav-link" style="color: var(--danger);"><i class="fa-solid fa-arrow-right-from-bracket"></i> Log Out</a>

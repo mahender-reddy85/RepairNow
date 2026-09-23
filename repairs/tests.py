@@ -113,12 +113,14 @@ class RepairNowTestSuite(TestCase):
             'service_area': 'Central Zone',
             'address': 'Workshop 2',
             'city': 'Vijayawada',
+            'state': 'Andhra Pradesh',
             'skills': [self.cat_ac.id],
             'estimated_cost_min': 400,
             'estimated_cost_max': 800,
             'password': 'techpassword',
             'confirm_password': 'techpassword',
         })
+
         self.assertEqual(res.status_code, 302)
         tech_user = User.objects.filter(username='new_tech', role=User.ROLE_TECHNICIAN).first()
         self.assertIsNotNone(tech_user)
