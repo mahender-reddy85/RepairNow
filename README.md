@@ -11,8 +11,6 @@ Connecting customers with verified local technicians — from request to repair 
 ![MySQL](https://img.shields.io/badge/MySQL-8.x-4479A1?logo=mysql&logoColor=white)
 ![License](https://img.shields.io/badge/License-Educational-lightgrey)
 
-**Last Updated:** September 18, 2026
-
 </div>
 
 ---
@@ -152,24 +150,6 @@ Visit **http://127.0.0.1:8000/**
 | `GOOGLE_MAPS_API_KEY` | Optional Google Maps key | *(empty)* |
 
 > **Note:** When `USE_SQLITE=False` (default), `DB_NAME`, `DB_USER`, and `DB_PASSWORD` are required. Set `USE_SQLITE=True` to fall back to a local `db.sqlite3` file.
-
----
-
-## 🔑 Default Credentials (after `seed_data`)
-
-| Role | Username | Password |
-|------|----------|----------|
-| Admin | `repairnow` | `123456` |
-| Customer | `ramesh_v` | `user1234` |
-| Customer | `priya_s` | `user1234` |
-| Customer | `ananya_p` | `user1234` |
-| Customer | `vikram_r` | `user1234` |
-| Technician | `suresh_tech` | `tech1234` |
-| Technician | `naresh_ac` | `tech1234` |
-| Technician | `rajesh_washer` | `tech1234` |
-| Technician | `manoj_mobile` | `tech1234` |
-| Technician | `arun_plumber` | `tech1234` |
-| Technician | `pending_tech` | `tech1234` *(pending verification)* |
 
 ---
 
@@ -314,9 +294,3 @@ The test suite covers:
 - Full job lifecycle (accept → on_way → arrived → in_progress → complete)
 - Review validation, average rating recalculation, duplicate prevention
 - Notification deletion and template integrity
-
----
-
-## 📄 License
-
-This project was built as a student portfolio project and is provided for **educational purposes**.
