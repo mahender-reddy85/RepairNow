@@ -26,13 +26,24 @@ def customer_dashboard(request):
             RepairRequest.STATUS_ACCEPTED,
             RepairRequest.STATUS_ON_THE_WAY,
             RepairRequest.STATUS_ARRIVED,
-            RepairRequest.STATUS_IN_PROGRESS
+            RepairRequest.STATUS_IN_PROGRESS,
+            RepairRequest.STATUS_REJECTED,
         ]
     ).order_by('-created_at')
 
     completed_jobs = Job.objects.filter(customer=profile, status=Job.STATUS_COMPLETED).order_by('-completed_date')
-    pending_count = active_requests.filter(status__in=[RepairRequest.STATUS_PENDING, RepairRequest.STATUS_MATCHING, RepairRequest.STATUS_TECHNICIAN_SELECTED]).count()
-    ongoing_count = active_requests.filter(status__in=[RepairRequest.STATUS_ACCEPTED, RepairRequest.STATUS_ON_THE_WAY, RepairRequest.STATUS_ARRIVED, RepairRequest.STATUS_IN_PROGRESS]).count()
+    pending_count = active_requests.filter(status__in=[
+        RepairRequest.STATUS_PENDING,
+        RepairRequest.STATUS_MATCHING,
+        RepairRequest.STATUS_TECHNICIAN_SELECTED,
+        RepairRequest.STATUS_REJECTED,
+    ]).count()
+    ongoing_count = active_requests.filter(status__in=[
+        RepairRequest.STATUS_ACCEPTED,
+        RepairRequest.STATUS_ON_THE_WAY,
+        RepairRequest.STATUS_ARRIVED,
+        RepairRequest.STATUS_IN_PROGRESS,
+    ]).count()
 
     return render(request, 'customer/dashboard.html', {
         'profile': profile,

@@ -30,6 +30,15 @@
     <form method="post" enctype="multipart/form-data" novalidate>
       {% csrf_token %}
 
+      {% if form.errors %}
+        <div class="alert alert-danger" style="margin-bottom: 1.5rem;">
+          <i class="fa-solid fa-triangle-exclamation"></i> Please correct the highlighted errors below and try again.
+          {% if form.non_field_errors %}
+            <div style="margin-top: 0.5rem;">{{ form.non_field_errors }}</div>
+          {% endif %}
+        </div>
+      {% endif %}
+
       <div style="display: grid; grid-template-columns: 220px 1fr; gap: 2.5rem; align-items: start;">
 
         <div style="display: flex; flex-direction: column; align-items: center; gap: 1rem; padding: 1.5rem; background: var(--gray-50); border-radius: var(--radius-lg); border: 1px solid var(--gray-200); position: sticky; top: 90px;">
@@ -89,20 +98,29 @@
             <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 0.5rem; background: var(--gray-50); padding: 1rem; border-radius: var(--radius-md); border: 1px solid var(--gray-200);">
               {{ form.skills }}
             </div>
+            {% if form.skills.errors %}<div class="form-error">{{ form.skills.errors.0 }}</div>{% endif %}
           </div>
 
           <div class="form-row">
             <div class="form-group">
               <label class="form-label" for="{{ form.experience.id_for_label }}">Years of Experience *</label>
               {{ form.experience }}
+              {% if form.experience.errors %}<div class="form-error">{{ form.experience.errors.0 }}</div>{% endif %}
             </div>
             <div class="form-group">
               <label class="form-label" for="{{ form.estimated_cost_min.id_for_label }}">Min Cost (₹) *</label>
               {{ form.estimated_cost_min }}
+              {% if form.estimated_cost_min.errors %}<div class="form-error">{{ form.estimated_cost_min.errors.0 }}</div>{% endif %}
             </div>
             <div class="form-group">
               <label class="form-label" for="{{ form.estimated_cost_max.id_for_label }}">Max Cost (₹) *</label>
               {{ form.estimated_cost_max }}
+              {% if form.estimated_cost_max.errors %}<div class="form-error">{{ form.estimated_cost_max.errors.0 }}</div>{% endif %}
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="{{ form.availability_status.id_for_label }}">Availability</label>
+              {{ form.availability_status }}
+              {% if form.availability_status.errors %}<div class="form-error">{{ form.availability_status.errors.0 }}</div>{% endif %}
             </div>
           </div>
 
@@ -112,16 +130,32 @@
             <div class="form-group">
               <label class="form-label" for="{{ form.service_area.id_for_label }}">Service Area / Localities *</label>
               {{ form.service_area }}
+              {% if form.service_area.errors %}<div class="form-error">{{ form.service_area.errors.0 }}</div>{% endif %}
             </div>
             <div class="form-group">
               <label class="form-label" for="{{ form.city.id_for_label }}">City *</label>
               {{ form.city }}
+              {% if form.city.errors %}<div class="form-error">{{ form.city.errors.0 }}</div>{% endif %}
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="{{ form.state.id_for_label }}">State</label>
+              {{ form.state }}
+              {% if form.state.errors %}<div class="form-error">{{ form.state.errors.0 }}</div>{% endif %}
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="{{ form.postal_code.id_for_label }}">Postal Code</label>
+              {{ form.postal_code }}
+              {% if form.postal_code.errors %}<div class="form-error">{{ form.postal_code.errors.0 }}</div>{% endif %}
             </div>
           </div>
 
           <div class="form-group">
             <label class="form-label" for="{{ form.address.id_for_label }}">Workshop / Base Address</label>
             {{ form.address }}
+            {% if form.address.errors %}<div class="form-error">{{ form.address.errors.0 }}</div>{% endif %}
           </div>
 
           <div style="padding-top: 1.25rem; border-top: 1px solid var(--gray-100); margin-top: 0.5rem;">

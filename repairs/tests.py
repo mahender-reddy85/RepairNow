@@ -61,6 +61,16 @@ class RepairNowTestSuite(TestCase):
         )
         TechnicianSkill.objects.create(technician=self.tech_profile2, service_category=self.cat_washer)
 
+        self.tech_user3 = User.objects.create_user(username='tech3', password='password123', role=User.ROLE_TECHNICIAN)
+        self.tech_profile3 = TechnicianProfile.objects.create(
+            user=self.tech_user3, full_name='Tech Alternate', phone='9849112235',
+            experience=4, city='Vijayawada', latitude=16.5020, longitude=80.6430,
+            estimated_cost_min=600, estimated_cost_max=1200,
+            verification_status=TechnicianProfile.VERIFICATION_VERIFIED,
+            availability_status=TechnicianProfile.AVAILABILITY_AVAILABLE
+        )
+        TechnicianSkill.objects.create(technician=self.tech_profile3, service_category=self.cat_ac)
+
         self.admin_user = User.objects.create_superuser(username='admin_test', password='password123', role=User.ROLE_ADMIN)
 
     def test_default_service_categories_are_created_when_missing(self):
@@ -409,3 +419,74 @@ class RepairNowTestSuite(TestCase):
         self.assertIn('form method="post"', template_text)
         self.assertIn('csrf_token', template_text)
         self.assertIn('customer_select_technician', template_text)
+
+    def test_rejected_request_appears_on_customer_dashboard_and_can_select_alternate_tech(self):
+        req = RepairRequest.objects.create(
+            customer=self.cust_profile1, service_category=self.cat_ac,
+            device_name='Split AC', problem_description='No cooling',
+            location='Benz Circle', city='Vijayawada', urgency=RepairRequest.URGENCY_MEDIUM,
+            preferred_date=timezone.now().date(), preferred_time='Morning',
+            status=RepairRequest.STATUS_REJECTED
+        )
+        # tech1 previously rejected
+        TechnicianRejection.objects.create(repair_request=req, technician=self.tech_profile1)
+        # tech3 is an eligible match
+        TechnicianMatch.objects.create(repair_request=req, technician=self.tech_profile3, match_score=92.0)
+
+        self.client.login(username='cust1', password='password123')
+        res = self.client.get(reverse('customer_dashboard'))
+        self.assertEqual(res.status_code, 200)
+        self.assertIn(req, res.context['active_requests'])
+        self.assertGreaterEqual(res.context['pending_count'], 1)
+        self.assertContains(res, 'Declined / Needs Tech')
+
+        # Customer views matches
+        match_res = self.client.get(reverse('customer_repair_matches', args=[req.id]))
+        self.assertEqual(match_res.status_code, 200)
+
+        # Customer attempts to select the rejected tech1 - must fail
+        post_reject = self.client.post(reverse('customer_select_technician', args=[req.id, self.tech_profile1.id]))
+        self.assertEqual(post_reject.status_code, 302)
+        req.refresh_from_db()
+        self.assertIsNone(req.selected_technician)
+        self.assertEqual(req.status, RepairRequest.STATUS_REJECTED)
+
+        # Customer selects eligible alternate tech3 - must succeed
+        post_alt = self.client.post(reverse('customer_select_technician', args=[req.id, self.tech_profile3.id]))
+        self.assertEqual(post_alt.status_code, 302)
+        req.refresh_from_db()
+        self.assertEqual(req.selected_technician, self.tech_profile3)
+        self.assertEqual(req.status, RepairRequest.STATUS_TECHNICIAN_SELECTED)
+
+    def test_rejected_request_visibility_on_technician_dashboard_and_requests(self):
+        req = RepairRequest.objects.create(
+            customer=self.cust_profile1, service_category=self.cat_ac,
+            device_name='Split AC', problem_description='Compressor issue',
+            location='Benz Circle', city='Vijayawada', urgency=RepairRequest.URGENCY_MEDIUM,
+            preferred_date=timezone.now().date(), preferred_time='Morning',
+            status=RepairRequest.STATUS_REJECTED
+        )
+        TechnicianRejection.objects.create(repair_request=req, technician=self.tech_profile1)
+
+        self.client.login(username='tech1', password='password123')
+
+        # 1. Technician Dashboard: rejected request should NOT appear in new_requests, but count is tracked
+        dash_res = self.client.get(reverse('technician_dashboard'))
+        self.assertEqual(dash_res.status_code, 200)
+        self.assertNotIn(req, dash_res.context['new_requests'])
+        self.assertEqual(dash_res.context['declined_requests_count'], 1)
+        self.assertContains(dash_res, 'Declined Requests')
+
+        # 2. Technician Requests: rejected request appears in history
+        reqs_res = self.client.get(reverse('technician_requests'))
+        self.assertEqual(reqs_res.status_code, 200)
+        self.assertIn(req, reqs_res.context['requests'])
+        self.assertContains(reqs_res, 'You declined this request')
+
+        # 3. Technician Request Detail: can view request details with decline banner
+        detail_res = self.client.get(reverse('technician_request_detail', args=[req.id]))
+        self.assertEqual(detail_res.status_code, 200)
+        self.assertEqual(detail_res.context['repair_request'], req)
+        self.assertContains(detail_res, 'Request Declined')
+        self.assertContains(detail_res, 'Declined (No further action)')
+

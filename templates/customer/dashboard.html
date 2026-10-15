@@ -62,10 +62,18 @@
                   {% endif %}
                 </td>
                 <td>
-                  {% if req.selected_technician %}
-                    <i class="fa-solid fa-check" style="color: var(--success); font-size: 1rem;" title="Technician selected"></i>
+                  {% if req.status == 'REJECTED' %}
+                    <span class="badge badge-rejected"><i class="fa-solid fa-triangle-exclamation"></i> Declined / Needs Tech</span>
+                  {% elif req.status == 'PENDING' %}
+                    <span class="badge badge-pending">Pending</span>
+                  {% elif req.status == 'MATCHING' %}
+                    <span class="badge badge-pending">Matching</span>
+                  {% elif req.status == 'TECHNICIAN_SELECTED' %}
+                    <span class="badge badge-info">Tech Assigned</span>
+                  {% elif req.selected_technician %}
+                    <span class="badge badge-{{ req.status|lower }}">{{ req.get_status_display }}</span>
                   {% else %}
-                    <i class="fa-solid fa-xmark" style="color: var(--danger); font-size: 1rem;" title="No technician selected"></i>
+                    <span class="badge badge-pending">{{ req.get_status_display }}</span>
                   {% endif %}
                 </td>
                 <td>

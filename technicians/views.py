@@ -3,6 +3,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.utils import timezone
+from django.db.models import Q
 from accounts.decorators import technician_required
 from accounts.forms import TechnicianProfileUpdateForm
 from .models import TechnicianProfile, Availability, TechnicianSkill
@@ -26,12 +27,14 @@ def technician_dashboard(request):
     ).order_by('-created_at')
 
     completed_jobs_count = Job.objects.filter(technician=profile, status=Job.STATUS_COMPLETED).count()
+    declined_requests_count = profile.request_rejections.count()
 
     context = {
         'profile': profile,
         'new_requests_count': new_requests.count(),
         'active_jobs_count': active_jobs.count(),
         'completed_jobs_count': completed_jobs_count,
+        'declined_requests_count': declined_requests_count,
         'average_rating': profile.average_rating,
         'new_requests': new_requests[:5],
         'active_jobs': active_jobs[:5],
@@ -121,7 +124,9 @@ def toggle_availability_ajax(request):
 @technician_required
 def technician_requests(request):
     profile = request.user.technician_profile
-    requests_qs = RepairRequest.objects.filter(selected_technician=profile)
+    requests_qs = RepairRequest.objects.filter(
+        Q(selected_technician=profile) | Q(rejections__technician=profile)
+    ).distinct().order_by('-created_at')
 
     status_filter = request.GET.get('status')
     urgency_filter = request.GET.get('urgency')
@@ -149,7 +154,12 @@ def technician_requests(request):
 @technician_required
 def technician_request_detail(request, request_id):
     profile = request.user.technician_profile
-    repair_request = get_object_or_404(RepairRequest, id=request_id, selected_technician=profile)
+    repair_request = get_object_or_404(
+        RepairRequest.objects.filter(
+            Q(selected_technician=profile) | Q(rejections__technician=profile)
+        ).distinct(),
+        id=request_id
+    )
     
     job = getattr(repair_request, 'job', None)
 

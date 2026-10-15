@@ -177,6 +177,30 @@ class TechnicianProfileUpdateForm(forms.ModelForm):
         widget=forms.CheckboxSelectMultiple(),
         required=False
     )
+    state = forms.CharField(
+        initial='Andhra Pradesh',
+        required=False,
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'State'})
+    )
+    postal_code = forms.CharField(
+        required=False,
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Postal Code'})
+    )
+    availability_status = forms.ChoiceField(
+        choices=TechnicianProfile.AVAILABILITY_CHOICES,
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
+
+    def clean(self):
+        cleaned_data = super().clean()
+        if not cleaned_data.get('state'):
+            cleaned_data['state'] = 'Andhra Pradesh'
+        c_min = cleaned_data.get('estimated_cost_min')
+        c_max = cleaned_data.get('estimated_cost_max')
+        if c_min is not None and c_max is not None and c_min > c_max:
+            self.add_error('estimated_cost_min', "Minimum cost cannot exceed maximum cost.")
+        return cleaned_data
 
     class Meta:
         model = TechnicianProfile

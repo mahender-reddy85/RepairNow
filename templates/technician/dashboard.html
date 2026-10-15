@@ -51,6 +51,7 @@
           <th>New Requests</th>
           <th>Active Jobs</th>
           <th>Completed Jobs</th>
+          <th>Declined Requests</th>
           <th>Average Rating</th>
         </tr>
       </thead>
@@ -59,6 +60,7 @@
           <td>{{ new_requests_count }}</td>
           <td>{{ active_jobs_count }}</td>
           <td>{{ completed_jobs_count }}</td>
+          <td>{{ declined_requests_count }}</td>
           <td>{{ average_rating|floatformat:1 }}</td>
         </tr>
       </tbody>

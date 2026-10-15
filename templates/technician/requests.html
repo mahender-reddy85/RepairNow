@@ -18,6 +18,15 @@
       <h2>Customer Repair Requests</h2>
 
       <form method="get" style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+        <select name="status" class="form-select" style="width: auto;">
+          <option value="">All Statuses</option>
+          <option value="TECHNICIAN_SELECTED" {% if selected_status == 'TECHNICIAN_SELECTED' %}selected{% endif %}>New / Actionable</option>
+          <option value="ACCEPTED" {% if selected_status == 'ACCEPTED' %}selected{% endif %}>Accepted</option>
+          <option value="REJECTED" {% if selected_status == 'REJECTED' %}selected{% endif %}>Declined</option>
+          <option value="IN_PROGRESS" {% if selected_status == 'IN_PROGRESS' %}selected{% endif %}>In Progress</option>
+          <option value="COMPLETED" {% if selected_status == 'COMPLETED' %}selected{% endif %}>Completed</option>
+        </select>
+
         <select name="urgency" class="form-select" style="width: auto;">
           <option value="">All Urgencies</option>
           <option value="EMERGENCY" {% if selected_urgency == 'EMERGENCY' %}selected{% endif %}>Emergency</option>
@@ -34,12 +43,12 @@
         </select>
 
         <button type="submit" class="btn btn-secondary btn-sm">Filter</button>
-        {% if selected_urgency or selected_service %}
+        {% if selected_status or selected_urgency or selected_service %}
           <a href="{% url 'technician_requests' %}" class="btn btn-sm" style="color: var(--danger);">Reset</a>
         {% endif %}
       </form>
     </div>
-    <p style="margin: 0;">Requests where customers have chosen you as their preferred repair technician.</p>
+    <p style="margin: 0;">Requests where customers have chosen you as their preferred repair technician or requests in your history.</p>
   </div>
 
   {% if requests %}
@@ -83,6 +92,13 @@
                 <a href="{% url 'technician_reject_request' req.id %}" class="btn btn-danger btn-sm" onclick="return confirm('Reject this request?');">
                   Reject
                 </a>
+              </div>
+            {% elif req.status == 'REJECTED' %}
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-size: 0.85rem; color: var(--danger); font-weight: 500;">
+                  <i class="fa-solid fa-ban"></i> You declined this request
+                </span>
+                <a href="{% url 'technician_request_detail' req.id %}" class="btn btn-secondary btn-sm">View Details</a>
               </div>
             {% else %}
               <a href="{% url 'technician_request_detail' req.id %}" class="btn btn-secondary btn-sm btn-block">View Request</a>
@@ -164,6 +180,16 @@
         </div>
       {% endif %}
 
+      {% if repair_request.status == 'REJECTED' %}
+        <div style="background-color: #fef2f2; border: 1px solid #fecaca; color: #991b1b; padding: 1rem; border-radius: var(--radius-md); margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.75rem;">
+          <i class="fa-solid fa-circle-exclamation" style="font-size: 1.25rem;"></i>
+          <div>
+            <strong>Request Declined</strong>
+            <div style="font-size: 0.88rem;">You previously declined this repair request. It is preserved here for your historical records.</div>
+          </div>
+        </div>
+      {% endif %}
+
       <div style="border-top: 1px solid var(--gray-200); padding-top: 1.5rem; display: flex; gap: 1rem;">
         {% if repair_request.status == 'TECHNICIAN_SELECTED' %}
           <a href="{% url 'technician_accept_request' repair_request.id %}" class="btn btn-success btn-lg">
@@ -172,6 +198,10 @@
           <a href="{% url 'technician_reject_request' repair_request.id %}" class="btn btn-danger btn-lg" onclick="return confirm('Decline this request?');">
             Decline
           </a>
+        {% elif repair_request.status == 'REJECTED' %}
+          <button type="button" class="btn btn-secondary btn-lg" disabled style="opacity: 0.7; cursor: not-allowed;">
+            <i class="fa-solid fa-ban"></i> Declined (No further action)
+          </button>
         {% elif job %}
           <a href="{% url 'technician_job_detail' job.id %}" class="btn btn-primary btn-lg">
             Open Job Workspace
