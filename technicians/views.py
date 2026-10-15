@@ -7,7 +7,7 @@ from accounts.decorators import technician_required
 from accounts.forms import TechnicianProfileUpdateForm
 from .models import TechnicianProfile, Availability, TechnicianSkill
 from services.models import ServiceCategory
-from repairs.models import RepairRequest, Job, JobStatusHistory
+from repairs.models import RepairRequest, Job, JobStatusHistory, TechnicianRejection
 from reviews.models import Review
 from notifications.models import send_notification
 
@@ -214,6 +214,13 @@ def technician_reject_request(request, request_id):
     repair_request.status = RepairRequest.STATUS_REJECTED
     repair_request.selected_technician = None
     repair_request.save(update_fields=['status', 'selected_technician', 'updated_at'])
+
+    TechnicianRejection.objects.get_or_create(
+        repair_request=repair_request,
+        technician=profile
+    )
+
+    repair_request.matches.filter(technician=profile).delete()
 
     send_notification(
         user=repair_request.customer.user,

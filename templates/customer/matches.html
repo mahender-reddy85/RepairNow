@@ -116,9 +116,12 @@
               </div>
 
               <div style="display: flex; gap: 0.5rem; width: 100%;">
-                <a href="{% url 'customer_select_technician' repair_request.id tech.id %}" class="btn btn-primary btn-sm btn-block" onclick="return confirm('Confirm selection of {{ tech.full_name }} for this repair?');">
-                  <i class="fa-solid fa-check"></i> Select Technician
-                </a>
+                <form method="post" action="{% url 'customer_select_technician' repair_request.id tech.id %}" style="width: 100%; margin: 0;">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-primary btn-sm btn-block" onclick="return confirm('Confirm selection of {{ tech.full_name }} for this repair?');">
+                    <i class="fa-solid fa-check"></i> Select Technician
+                  </button>
+                </form>
               </div>
             </div>
           </div>

@@ -8,7 +8,7 @@ from datetime import timedelta
 from accounts.models import CustomerProfile
 from services.models import ServiceCategory
 from technicians.models import TechnicianProfile, TechnicianSkill
-from repairs.models import RepairRequest, Job, JobStatusHistory, TechnicianMatch
+from repairs.models import RepairRequest, Job, JobStatusHistory, TechnicianMatch, TechnicianRejection
 from repairs.matching import haversine_distance, calculate_distance_score, calculate_cost_score, find_and_rank_technicians
 from reviews.models import Review
 from notifications.models import Notification
@@ -288,3 +288,124 @@ class RepairNowTestSuite(TestCase):
         })
         self.assertEqual(dup_res.status_code, 302)
         self.assertEqual(Review.objects.filter(job=job).count(), 1)
+
+    def test_customer_select_technician_rejects_get_requests(self):
+        req = RepairRequest.objects.create(
+            customer=self.cust_profile1, service_category=self.cat_ac,
+            device_name='Split AC', problem_description='No cooling',
+            location='Benz Circle', city='Vijayawada', urgency=RepairRequest.URGENCY_MEDIUM,
+            preferred_date=timezone.now().date(), preferred_time='Morning',
+            status=RepairRequest.STATUS_MATCHING
+        )
+        TechnicianMatch.objects.create(repair_request=req, technician=self.tech_profile1, match_score=95.0)
+
+        self.client.login(username='cust1', password='password123')
+        get_res = self.client.get(reverse('customer_select_technician', args=[req.id, self.tech_profile1.id]))
+        # Must reject GET with 405 Method Not Allowed
+        self.assertEqual(get_res.status_code, 405)
+
+    def test_customer_select_technician_enforces_ownership(self):
+        req = RepairRequest.objects.create(
+            customer=self.cust_profile1, service_category=self.cat_ac,
+            device_name='Split AC', problem_description='No cooling',
+            location='Benz Circle', city='Vijayawada', urgency=RepairRequest.URGENCY_MEDIUM,
+            preferred_date=timezone.now().date(), preferred_time='Morning',
+            status=RepairRequest.STATUS_MATCHING
+        )
+        TechnicianMatch.objects.create(repair_request=req, technician=self.tech_profile1, match_score=95.0)
+
+        # Login as customer 2 (different customer)
+        self.client.login(username='cust2', password='password123')
+        post_res = self.client.post(reverse('customer_select_technician', args=[req.id, self.tech_profile1.id]))
+        self.assertEqual(post_res.status_code, 403)
+
+    def test_customer_select_technician_enforces_lifecycle_status(self):
+        req = RepairRequest.objects.create(
+            customer=self.cust_profile1, service_category=self.cat_ac,
+            device_name='Split AC', problem_description='No cooling',
+            location='Benz Circle', city='Vijayawada', urgency=RepairRequest.URGENCY_MEDIUM,
+            preferred_date=timezone.now().date(), preferred_time='Morning',
+            status=RepairRequest.STATUS_ACCEPTED, selected_technician=self.tech_profile1
+        )
+        TechnicianMatch.objects.create(repair_request=req, technician=self.tech_profile1, match_score=95.0)
+
+        self.client.login(username='cust1', password='password123')
+        post_res = self.client.post(reverse('customer_select_technician', args=[req.id, self.tech_profile1.id]))
+        self.assertEqual(post_res.status_code, 302)
+        req.refresh_from_db()
+        # Status must remain ACCEPTED, not modified
+        self.assertEqual(req.status, RepairRequest.STATUS_ACCEPTED)
+
+    def test_customer_select_technician_requires_technician_match(self):
+        req = RepairRequest.objects.create(
+            customer=self.cust_profile1, service_category=self.cat_ac,
+            device_name='Split AC', problem_description='No cooling',
+            location='Benz Circle', city='Vijayawada', urgency=RepairRequest.URGENCY_MEDIUM,
+            preferred_date=timezone.now().date(), preferred_time='Morning',
+            status=RepairRequest.STATUS_MATCHING
+        )
+        # Tech 1 is NOT added to req.matches
+
+        self.client.login(username='cust1', password='password123')
+        post_res = self.client.post(reverse('customer_select_technician', args=[req.id, self.tech_profile1.id]))
+        self.assertEqual(post_res.status_code, 302)
+        req.refresh_from_db()
+        self.assertIsNone(req.selected_technician)
+        self.assertEqual(req.status, RepairRequest.STATUS_MATCHING)
+
+    def test_customer_select_technician_success(self):
+        req = RepairRequest.objects.create(
+            customer=self.cust_profile1, service_category=self.cat_ac,
+            device_name='Split AC', problem_description='No cooling',
+            location='Benz Circle', city='Vijayawada', urgency=RepairRequest.URGENCY_MEDIUM,
+            preferred_date=timezone.now().date(), preferred_time='Morning',
+            status=RepairRequest.STATUS_MATCHING
+        )
+        TechnicianMatch.objects.create(repair_request=req, technician=self.tech_profile1, match_score=95.0)
+
+        self.client.login(username='cust1', password='password123')
+        post_res = self.client.post(reverse('customer_select_technician', args=[req.id, self.tech_profile1.id]))
+        self.assertEqual(post_res.status_code, 302)
+        req.refresh_from_db()
+        self.assertEqual(req.selected_technician, self.tech_profile1)
+        self.assertEqual(req.status, RepairRequest.STATUS_TECHNICIAN_SELECTED)
+
+    def test_technician_rejection_creates_history_and_deletes_match(self):
+        req = RepairRequest.objects.create(
+            customer=self.cust_profile1, service_category=self.cat_ac,
+            device_name='Split AC', problem_description='No cooling',
+            location='Benz Circle', city='Vijayawada', urgency=RepairRequest.URGENCY_MEDIUM,
+            preferred_date=timezone.now().date(), preferred_time='Morning',
+            selected_technician=self.tech_profile1,
+            status=RepairRequest.STATUS_TECHNICIAN_SELECTED
+        )
+        match = TechnicianMatch.objects.create(repair_request=req, technician=self.tech_profile1, match_score=95.0)
+
+        self.client.login(username='tech1', password='password123')
+        reject_res = self.client.get(reverse('technician_reject_request', args=[req.id]))
+        self.assertEqual(reject_res.status_code, 302)
+
+        req.refresh_from_db()
+        self.assertEqual(req.status, RepairRequest.STATUS_REJECTED)
+        self.assertIsNone(req.selected_technician)
+
+        # Verify persistent rejection record exists
+        rejection_exists = TechnicianRejection.objects.filter(repair_request=req, technician=self.tech_profile1).exists()
+        self.assertTrue(rejection_exists)
+
+        # Verify technician match record was deleted
+        self.assertFalse(TechnicianMatch.objects.filter(repair_request=req, technician=self.tech_profile1).exists())
+
+        # Customer attempts to re-select the rejected technician
+        self.client.login(username='cust1', password='password123')
+        reselect_res = self.client.post(reverse('customer_select_technician', args=[req.id, self.tech_profile1.id]))
+        self.assertEqual(reselect_res.status_code, 302)
+        req.refresh_from_db()
+        self.assertIsNone(req.selected_technician)
+        self.assertEqual(req.status, RepairRequest.STATUS_REJECTED)
+
+    def test_customer_matches_template_uses_post_form_with_csrf(self):
+        template_text = Path('templates/customer/matches.html').read_text(encoding='utf-8')
+        self.assertIn('form method="post"', template_text)
+        self.assertIn('csrf_token', template_text)
+        self.assertIn('customer_select_technician', template_text)

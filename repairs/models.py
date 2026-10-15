@@ -92,6 +92,20 @@ class TechnicianMatch(models.Model):
         return f"Match: Tech {self.technician.full_name} for Req #{self.repair_request.id} - Score: {self.match_score}%"
 
 
+class TechnicianRejection(models.Model):
+    repair_request = models.ForeignKey(RepairRequest, on_delete=models.CASCADE, related_name='rejections')
+    technician = models.ForeignKey('technicians.TechnicianProfile', on_delete=models.CASCADE, related_name='request_rejections')
+    rejected_at = models.DateTimeField(auto_now_add=True)
+    reason = models.TextField(blank=True)
+
+    class Meta:
+        ordering = ['-rejected_at']
+        unique_together = ('repair_request', 'technician')
+
+    def __str__(self):
+        return f"Rejection: Tech {self.technician.full_name} for Req #{self.repair_request.id} at {self.rejected_at.strftime('%Y-%m-%d %H:%M')}"
+
+
 class Job(models.Model):
     STATUS_ACCEPTED = 'ACCEPTED'
     STATUS_ON_THE_WAY = 'ON_THE_WAY'

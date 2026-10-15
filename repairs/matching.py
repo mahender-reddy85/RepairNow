@@ -84,11 +84,13 @@ def calculate_cost_score(technician, budget):
 
 
 def find_and_rank_technicians(repair_request):
+    rejected_tech_ids = repair_request.rejections.values_list('technician_id', flat=True)
+
     candidate_technicians = TechnicianProfile.objects.filter(
         user__is_active=True,
         verification_status=TechnicianProfile.VERIFICATION_VERIFIED,
         skills__service_category=repair_request.service_category
-    ).distinct()
+    ).exclude(id__in=rejected_tech_ids).distinct()
 
     matches = []
     urgency = repair_request.urgency

@@ -3,6 +3,8 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse, HttpResponseForbidden
 from django.utils import timezone
+from django.views.decorators.http import require_POST
+from django.db import transaction
 from accounts.decorators import customer_required
 from accounts.forms import CustomerProfileUpdateForm
 from .models import RepairRequest, TechnicianMatch, Job, JobStatusHistory
@@ -158,38 +160,68 @@ def customer_repair_matches(request, request_id):
 
 @login_required
 @customer_required
+@require_POST
 def customer_select_technician(request, request_id, tech_id):
     profile = request.user.customer_profile
-    repair_request = get_object_or_404(RepairRequest, id=request_id)
 
-    if repair_request.customer != profile:
-        return HttpResponseForbidden("Unauthorized.")
+    with transaction.atomic():
+        repair_request = get_object_or_404(
+            RepairRequest.objects.select_for_update(),
+            id=request_id
+        )
 
-    if not repair_request.can_be_cancelled() and repair_request.selected_technician is not None:
-        messages.warning(request, "A technician has already been selected for this request.")
-        return redirect('customer_repair_track', request_id=repair_request.id)
+        if repair_request.customer != profile:
+            return HttpResponseForbidden("Unauthorized.")
 
-    technician = get_object_or_404(TechnicianProfile, id=tech_id, verification_status=TechnicianProfile.VERIFICATION_VERIFIED)
+        selectable_statuses = [
+            RepairRequest.STATUS_PENDING,
+            RepairRequest.STATUS_MATCHING,
+            RepairRequest.STATUS_REJECTED,
+        ]
+        if repair_request.status not in selectable_statuses:
+            messages.warning(request, "A technician has already been selected or this request is currently active.")
+            return redirect('customer_repair_track', request_id=repair_request.id)
 
-    repair_request.selected_technician = technician
-    repair_request.status = RepairRequest.STATUS_TECHNICIAN_SELECTED
-    repair_request.save(update_fields=['selected_technician', 'status', 'updated_at'])
+        technician = get_object_or_404(
+            TechnicianProfile,
+            id=tech_id,
+            verification_status=TechnicianProfile.VERIFICATION_VERIFIED,
+            user__is_active=True
+        )
 
-    send_notification(
-        user=technician.user,
-        title="New Repair Request Assigned!",
-        message=f"{profile.full_name} has requested your service for {repair_request.device_name}.",
-        link=f"/technician/requests/{repair_request.id}/",
-        notification_type="JOB_REQUEST"
-    )
+        if repair_request.rejections.filter(technician=technician).exists():
+            messages.error(
+                request,
+                f"{technician.full_name} has declined this repair request. Please select an alternate technician."
+            )
+            return redirect('customer_repair_matches', request_id=repair_request.id)
 
-    send_notification(
-        user=request.user,
-        title="Technician Selected",
-        message=f"You selected {technician.full_name}. We have sent your request to the technician.",
-        link=f"/customer/repair/{repair_request.id}/track/",
-        notification_type="TECHNICIAN_SELECTED"
-    )
+        if not repair_request.matches.filter(technician=technician).exists():
+            messages.error(
+                request,
+                "The selected technician is not an eligible match for this repair request."
+            )
+            return redirect('customer_repair_matches', request_id=repair_request.id)
+
+        repair_request.selected_technician = technician
+        repair_request.status = RepairRequest.STATUS_TECHNICIAN_SELECTED
+        repair_request.save(update_fields=['selected_technician', 'status', 'updated_at'])
+
+        send_notification(
+            user=technician.user,
+            title="New Repair Request Assigned!",
+            message=f"{profile.full_name} has requested your service for {repair_request.device_name}.",
+            link=f"/technician/requests/{repair_request.id}/",
+            notification_type="JOB_REQUEST"
+        )
+
+        send_notification(
+            user=request.user,
+            title="Technician Selected",
+            message=f"You selected {technician.full_name}. We have sent your request to the technician.",
+            link=f"/customer/repair/{repair_request.id}/track/",
+            notification_type="TECHNICIAN_SELECTED"
+        )
 
     messages.success(request, f"You have selected {technician.full_name}. Awaiting technician acceptance.")
     return redirect('customer_repair_track', request_id=repair_request.id)
