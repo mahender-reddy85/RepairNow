@@ -89,12 +89,18 @@
                   <td>{{ tech.city }}</td>
                   <td>
                     <div style="display: flex; gap: 0.35rem;">
-                      <a href="{% url 'admin_verify_technician' tech.id 'approve' %}" class="btn btn-success btn-sm" title="Approve">
-                        <i class="fa-solid fa-check"></i>
-                      </a>
-                      <a href="{% url 'admin_verify_technician' tech.id 'reject' %}" class="btn btn-danger btn-sm" title="Reject">
-                        <i class="fa-solid fa-xmark"></i>
-                      </a>
+                      <form method="post" action="{% url 'admin_verify_technician' tech.id 'approve' %}" style="display: inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-success btn-sm" title="Approve">
+                          <i class="fa-solid fa-check"></i>
+                        </button>
+                      </form>
+                      <form method="post" action="{% url 'admin_verify_technician' tech.id 'reject' %}" style="display: inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger btn-sm" title="Reject">
+                          <i class="fa-solid fa-xmark"></i>
+                        </button>
+                      </form>
                     </div>
                   </td>
                 </tr>

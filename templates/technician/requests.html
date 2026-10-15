@@ -84,14 +84,20 @@
 
           <div style="border-top: 1px solid var(--gray-200); padding-top: 1rem;">
             {% if req.status == 'TECHNICIAN_SELECTED' %}
-              <div style="display: flex; gap: 0.5rem;">
+              <div style="display: flex; gap: 0.5rem; align-items: center;">
                 <a href="{% url 'technician_request_detail' req.id %}" class="btn btn-secondary btn-sm" style="flex: 1;">View Details</a>
-                <a href="{% url 'technician_accept_request' req.id %}" class="btn btn-success btn-sm" style="flex: 1;">
-                  Accept
-                </a>
-                <a href="{% url 'technician_reject_request' req.id %}" class="btn btn-danger btn-sm" onclick="return confirm('Reject this request?');">
-                  Reject
-                </a>
+                <form method="post" action="{% url 'technician_accept_request' req.id %}" style="flex: 1; display: inline;">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-success btn-sm btn-block" style="width: 100%;">
+                    Accept
+                  </button>
+                </form>
+                <form method="post" action="{% url 'technician_reject_request' req.id %}" style="flex: 1; display: inline;" onsubmit="return confirm('Reject this request?');">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-danger btn-sm btn-block" style="width: 100%;">
+                    Reject
+                  </button>
+                </form>
               </div>
             {% elif req.status == 'REJECTED' %}
               <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -192,12 +198,18 @@
 
       <div style="border-top: 1px solid var(--gray-200); padding-top: 1.5rem; display: flex; gap: 1rem;">
         {% if repair_request.status == 'TECHNICIAN_SELECTED' %}
-          <a href="{% url 'technician_accept_request' repair_request.id %}" class="btn btn-success btn-lg">
-            Accept Request & Start Job
-          </a>
-          <a href="{% url 'technician_reject_request' repair_request.id %}" class="btn btn-danger btn-lg" onclick="return confirm('Decline this request?');">
-            Decline
-          </a>
+          <form method="post" action="{% url 'technician_accept_request' repair_request.id %}" style="display: inline;">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-success btn-lg">
+              Accept Request & Start Job
+            </button>
+          </form>
+          <form method="post" action="{% url 'technician_reject_request' repair_request.id %}" style="display: inline;" onsubmit="return confirm('Decline this request?');">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger btn-lg">
+              Decline
+            </button>
+          </form>
         {% elif repair_request.status == 'REJECTED' %}
           <button type="button" class="btn btn-secondary btn-lg" disabled style="opacity: 0.7; cursor: not-allowed;">
             <i class="fa-solid fa-ban"></i> Declined (No further action)

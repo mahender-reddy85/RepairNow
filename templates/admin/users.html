@@ -67,9 +67,12 @@
               </td>
               <td>
                 {% if u != request.user %}
-                  <a href="{% url 'admin_toggle_user_active' u.id %}" class="btn btn-sm {% if u.is_active %}btn-danger{% else %}btn-success{% endif %}" onclick="return confirm('Toggle active status for user {{ u.username }}?');">
-                    {% if u.is_active %}Deactivate{% else %}Activate{% endif %}
-                  </a>
+                  <form method="post" action="{% url 'admin_toggle_user_active' u.id %}" style="display: inline;" onsubmit="return confirm('Toggle active status for user {{ u.username }}?');">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm {% if u.is_active %}btn-danger{% else %}btn-success{% endif %}">
+                      {% if u.is_active %}Deactivate{% else %}Activate{% endif %}
+                    </button>
+                  </form>
                 {% else %}
                   <span style="font-size: 0.8rem; color: var(--gray-400);">Current Admin</span>
                 {% endif %}

@@ -135,9 +135,12 @@
         {% if repair_request.can_be_cancelled %}
           <div style="margin-top: 2rem; border-top: 1px solid var(--gray-200); padding-top: 1rem; display: flex; justify-content: space-between; align-items: center;">
             <span style="font-size: 0.88rem; color: var(--gray-500);">Need to change your plans?</span>
-            <a href="{% url 'customer_repair_cancel' repair_request.id %}" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to cancel this repair request?');">
-              <i class="fa-solid fa-ban"></i> Cancel Request
-            </a>
+            <form method="post" action="{% url 'customer_repair_cancel' repair_request.id %}" style="display: inline;" onsubmit="return confirm('Are you sure you want to cancel this repair request?');">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-danger btn-sm">
+                <i class="fa-solid fa-ban"></i> Cancel Request
+              </button>
+            </form>
           </div>
         {% endif %}
       </div>

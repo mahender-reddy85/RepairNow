@@ -279,32 +279,38 @@ def customer_repair_status_api(request, request_id):
 
 @login_required
 @customer_required
+@require_POST
 def customer_repair_cancel(request, request_id):
     profile = request.user.customer_profile
-    repair_request = get_object_or_404(RepairRequest, id=request_id)
 
-    if repair_request.customer != profile:
-        return HttpResponseForbidden("Unauthorized.")
-
-    if not repair_request.can_be_cancelled():
-        messages.error(request, "This repair request cannot be cancelled because it is already in progress or completed.")
-        return redirect('customer_repair_track', request_id=repair_request.id)
-
-    repair_request.status = RepairRequest.STATUS_CANCELLED
-    repair_request.save(update_fields=['status', 'updated_at'])
-
-    if hasattr(repair_request, 'job'):
-        repair_request.job.status = Job.STATUS_CANCELLED
-        repair_request.job.save(update_fields=['status', 'updated_at'])
-
-    if repair_request.selected_technician:
-        send_notification(
-            user=repair_request.selected_technician.user,
-            title="Request Cancelled",
-            message=f"Customer {profile.full_name} cancelled the repair request for {repair_request.device_name}.",
-            link="/technician/requests/",
-            notification_type="JOB_CANCELLED"
+    with transaction.atomic():
+        repair_request = get_object_or_404(
+            RepairRequest.objects.select_for_update(),
+            id=request_id
         )
+
+        if repair_request.customer != profile:
+            return HttpResponseForbidden("Unauthorized.")
+
+        if not repair_request.can_be_cancelled():
+            messages.error(request, "This repair request cannot be cancelled because it is already in progress or completed.")
+            return redirect('customer_repair_track', request_id=repair_request.id)
+
+        repair_request.status = RepairRequest.STATUS_CANCELLED
+        repair_request.save(update_fields=['status', 'updated_at'])
+
+        if hasattr(repair_request, 'job'):
+            repair_request.job.status = Job.STATUS_CANCELLED
+            repair_request.job.save(update_fields=['status', 'updated_at'])
+
+        if repair_request.selected_technician:
+            send_notification(
+                user=repair_request.selected_technician.user,
+                title="Request Cancelled",
+                message=f"Customer {profile.full_name} cancelled the repair request for {repair_request.device_name}.",
+                link="/technician/requests/",
+                notification_type="JOB_CANCELLED"
+            )
 
     messages.info(request, "Repair request has been cancelled.")
     return redirect('customer_dashboard')

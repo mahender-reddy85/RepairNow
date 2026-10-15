@@ -1,16 +1,22 @@
+import io
+from PIL import Image
 from pathlib import Path
 
 from django.test import TestCase, Client
 from django.urls import reverse
 from django.contrib.auth import get_user_model
 from django.utils import timezone
+from django.core.files.uploadedfile import SimpleUploadedFile
+from django.core.exceptions import ValidationError
 from datetime import timedelta
 from accounts.models import CustomerProfile
+from accounts.validators import validate_image_file, validate_document_file, MAX_UPLOAD_SIZE
 from services.models import ServiceCategory
 from technicians.models import TechnicianProfile, TechnicianSkill
 from repairs.models import RepairRequest, Job, JobStatusHistory, TechnicianMatch, TechnicianRejection
 from repairs.matching import haversine_distance, calculate_distance_score, calculate_cost_score, find_and_rank_technicians
-from reviews.models import Review
+from repairs.forms import RepairRequestForm
+from reviews.models import Review, Complaint
 from notifications.models import Notification
 
 User = get_user_model()
@@ -489,4 +495,394 @@ class RepairNowTestSuite(TestCase):
         self.assertEqual(detail_res.context['repair_request'], req)
         self.assertContains(detail_res, 'Request Declined')
         self.assertContains(detail_res, 'Declined (No further action)')
+
+    def test_login_open_redirect_safe_local_next(self):
+        res = self.client.post(reverse('login') + '?next=/customer/history/', {
+            'username': 'cust1',
+            'password': 'password123',
+        })
+        self.assertRedirects(res, '/customer/history/')
+
+    def test_login_open_redirect_rejects_external_target(self):
+        res = self.client.post(reverse('login') + '?next=https://attacker.example.com/phishing', {
+            'username': 'cust1',
+            'password': 'password123',
+        })
+        self.assertRedirects(res, reverse('login_redirect'), target_status_code=302)
+
+    def test_login_works_without_next(self):
+        res = self.client.post(reverse('login'), {
+            'username': 'cust1',
+            'password': 'password123',
+        })
+        self.assertRedirects(res, reverse('login_redirect'), target_status_code=302)
+
+    def test_complaint_idor_protection(self):
+        req = RepairRequest.objects.create(
+            customer=self.cust_profile1, service_category=self.cat_ac,
+            device_name='Split AC', problem_description='No cooling',
+            location='Benz Circle', city='Vijayawada', urgency=RepairRequest.URGENCY_MEDIUM,
+            preferred_date=timezone.now().date(), preferred_time='Morning',
+            status=RepairRequest.STATUS_ACCEPTED, selected_technician=self.tech_profile1
+        )
+        job = Job.objects.create(
+            repair_request=req, customer=self.cust_profile1, technician=self.tech_profile1,
+            status=Job.STATUS_ACCEPTED
+        )
+
+        # 1. Job customer can access and complain
+        self.client.login(username='cust1', password='password123')
+        get_res = self.client.get(reverse('submit_complaint_job', args=[job.id]))
+        self.assertEqual(get_res.status_code, 200)
+        post_res = self.client.post(reverse('submit_complaint_job', args=[job.id]), {
+            'subject': 'Delay',
+            'description': 'Technician arrived late',
+        })
+        self.assertEqual(post_res.status_code, 302)
+        self.assertTrue(Complaint.objects.filter(job=job, user=self.cust_user1).exists())
+
+        # 2. Job technician can access and complain
+        self.client.login(username='tech1', password='password123')
+        get_tech = self.client.get(reverse('submit_complaint_job', args=[job.id]))
+        self.assertEqual(get_tech.status_code, 200)
+        post_tech = self.client.post(reverse('submit_complaint_job', args=[job.id]), {
+            'subject': 'Access Issue',
+            'description': 'Customer was unavailable at scheduled time',
+        })
+        self.assertEqual(post_tech.status_code, 302)
+        self.assertTrue(Complaint.objects.filter(job=job, user=self.tech_user1).exists())
+
+        # 3. Unrelated customer cannot access or complain (403 Forbidden)
+        self.client.login(username='cust2', password='password123')
+        get_unrelated_cust = self.client.get(reverse('submit_complaint_job', args=[job.id]))
+        self.assertEqual(get_unrelated_cust.status_code, 403)
+        post_unrelated_cust = self.client.post(reverse('submit_complaint_job', args=[job.id]), {
+            'subject': 'Unauthorized',
+            'description': 'Trying to complain on job I do not own',
+        })
+        self.assertEqual(post_unrelated_cust.status_code, 403)
+        self.assertFalse(Complaint.objects.filter(job=job, user=self.cust_user2).exists())
+
+        # 4. Unrelated technician cannot access or complain (403 Forbidden)
+        self.client.login(username='tech3', password='password123')
+        get_unrelated_tech = self.client.get(reverse('submit_complaint_job', args=[job.id]))
+        self.assertEqual(get_unrelated_tech.status_code, 403)
+        post_unrelated_tech = self.client.post(reverse('submit_complaint_job', args=[job.id]), {
+            'subject': 'Unauthorized Tech',
+            'description': 'Trying to complain on job I am not assigned to',
+        })
+        self.assertEqual(post_unrelated_tech.status_code, 403)
+        self.assertFalse(Complaint.objects.filter(job=job, user=self.tech_user3).exists())
+
+        # 5. Authorized admin can access
+        self.client.login(username='admin_test', password='password123')
+        get_admin = self.client.get(reverse('submit_complaint_job', args=[job.id]))
+        self.assertEqual(get_admin.status_code, 200)
+
+    def test_admin_toggle_user_active_security(self):
+        # 1. GET returns 405 Method Not Allowed
+        self.client.login(username='admin_test', password='password123')
+        get_res = self.client.get(reverse('admin_toggle_user_active', args=[self.cust_user2.id]))
+        self.assertEqual(get_res.status_code, 405)
+
+        # 2. POST without valid CSRF fails
+        csrf_client = Client(enforce_csrf_checks=True)
+        csrf_client.login(username='admin_test', password='password123')
+        csrf_res = csrf_client.post(reverse('admin_toggle_user_active', args=[self.cust_user2.id]))
+        self.assertEqual(csrf_res.status_code, 403)
+
+        # 3. Non-admin users cannot perform the action
+        self.client.login(username='cust1', password='password123')
+        non_admin_res = self.client.post(reverse('admin_toggle_user_active', args=[self.cust_user2.id]))
+        self.assertEqual(non_admin_res.status_code, 302)
+        self.cust_user2.refresh_from_db()
+        self.assertTrue(self.cust_user2.is_active)
+
+        # 4. Authorized admin POST succeeds and toggles active state
+        self.client.login(username='admin_test', password='password123')
+        admin_post = self.client.post(reverse('admin_toggle_user_active', args=[self.cust_user2.id]))
+        self.assertEqual(admin_post.status_code, 302)
+        self.cust_user2.refresh_from_db()
+        self.assertFalse(self.cust_user2.is_active)
+
+        # 5. Admin toggling again reactivates
+        admin_post2 = self.client.post(reverse('admin_toggle_user_active', args=[self.cust_user2.id]))
+        self.assertEqual(admin_post2.status_code, 302)
+        self.cust_user2.refresh_from_db()
+        self.assertTrue(self.cust_user2.is_active)
+
+    def test_admin_verify_technician_security(self):
+        # 1. GET returns 405 Method Not Allowed
+        self.client.login(username='admin_test', password='password123')
+        get_res = self.client.get(reverse('admin_verify_technician', args=[self.tech_profile2.id, 'approve']))
+        self.assertEqual(get_res.status_code, 405)
+
+        # 2. POST without valid CSRF fails
+        csrf_client = Client(enforce_csrf_checks=True)
+        csrf_client.login(username='admin_test', password='password123')
+        csrf_res = csrf_client.post(reverse('admin_verify_technician', args=[self.tech_profile2.id, 'approve']))
+        self.assertEqual(csrf_res.status_code, 403)
+
+        # 3. Non-admin users cannot perform the action
+        self.client.login(username='cust1', password='password123')
+        non_admin_res = self.client.post(reverse('admin_verify_technician', args=[self.tech_profile2.id, 'approve']))
+        self.assertEqual(non_admin_res.status_code, 302)
+        self.tech_profile2.refresh_from_db()
+        self.assertEqual(self.tech_profile2.verification_status, TechnicianProfile.VERIFICATION_PENDING)
+
+        # 4. Authorized admin can approve
+        self.client.login(username='admin_test', password='password123')
+        approve_res = self.client.post(reverse('admin_verify_technician', args=[self.tech_profile2.id, 'approve']))
+        self.assertEqual(approve_res.status_code, 302)
+        self.tech_profile2.refresh_from_db()
+        self.assertEqual(self.tech_profile2.verification_status, TechnicianProfile.VERIFICATION_VERIFIED)
+
+        # 5. Authorized admin can reject
+        reject_res = self.client.post(reverse('admin_verify_technician', args=[self.tech_profile2.id, 'reject']))
+        self.assertEqual(reject_res.status_code, 302)
+        self.tech_profile2.refresh_from_db()
+        self.assertEqual(self.tech_profile2.verification_status, TechnicianProfile.VERIFICATION_REJECTED)
+
+        # 6. Authorized admin can suspend
+        suspend_res = self.client.post(reverse('admin_verify_technician', args=[self.tech_profile2.id, 'suspend']))
+        self.assertEqual(suspend_res.status_code, 302)
+        self.tech_profile2.refresh_from_db()
+        self.assertEqual(self.tech_profile2.verification_status, TechnicianProfile.VERIFICATION_SUSPENDED)
+
+        # 7. External malicious HTTP_REFERER cannot cause external redirect
+        evil_ref_res = self.client.post(
+            reverse('admin_verify_technician', args=[self.tech_profile2.id, 'approve']),
+            HTTP_REFERER='https://evil.attacker.com/malware'
+        )
+        self.assertEqual(evil_ref_res.status_code, 302)
+        self.assertRedirects(evil_ref_res, reverse('admin_technicians'))
+
+        # 8. Local safe HTTP_REFERER redirects back to the safe local URL
+        safe_ref_res = self.client.post(
+            reverse('admin_verify_technician', args=[self.tech_profile2.id, 'approve']),
+            HTTP_REFERER='http://testserver/admin/verifications/'
+        )
+        self.assertEqual(safe_ref_res.status_code, 302)
+        self.assertRedirects(safe_ref_res, 'http://testserver/admin/verifications/')
+
+    def test_technician_accept_request_security(self):
+        # Setup repair request with tech1 selected
+        repair_req = RepairRequest.objects.create(
+            customer=self.cust_profile1,
+            service_category=self.cat_ac,
+            device_name='AC Unit',
+            problem_description='Not cooling',
+            location='MG Road',
+            city='Vijayawada',
+            preferred_date=timezone.now().date(),
+            urgency=RepairRequest.URGENCY_MEDIUM,
+            status=RepairRequest.STATUS_TECHNICIAN_SELECTED,
+            selected_technician=self.tech_profile1,
+        )
+        TechnicianMatch.objects.create(repair_request=repair_req, technician=self.tech_profile1, rank=1, match_score=95.0)
+
+        # 1. GET returns 405 Method Not Allowed
+        self.client.login(username='tech1', password='password123')
+        get_res = self.client.get(reverse('technician_accept_request', args=[repair_req.id]))
+        self.assertEqual(get_res.status_code, 405)
+
+        # 2. POST without CSRF returns 403 Forbidden with CSRF enforcement
+        csrf_client = Client(enforce_csrf_checks=True)
+        csrf_client.login(username='tech1', password='password123')
+        csrf_res = csrf_client.post(reverse('technician_accept_request', args=[repair_req.id]))
+        self.assertEqual(csrf_res.status_code, 403)
+
+        # 3. Unauthorized technician (tech2) gets 403 Forbidden
+        self.client.login(username='tech2', password='password123')
+        unauth_res = self.client.post(reverse('technician_accept_request', args=[repair_req.id]))
+        self.assertEqual(unauth_res.status_code, 403)
+
+        # 4. Authorized technician (tech1) POST succeeds
+        self.client.login(username='tech1', password='password123')
+        post_res = self.client.post(reverse('technician_accept_request', args=[repair_req.id]))
+        self.assertEqual(post_res.status_code, 302)
+        repair_req.refresh_from_db()
+        self.assertEqual(repair_req.status, RepairRequest.STATUS_IN_PROGRESS)
+
+        job = Job.objects.filter(repair_request=repair_req).first()
+        self.assertIsNotNone(job)
+        self.assertEqual(job.technician, self.tech_profile1)
+        self.assertEqual(job.customer, self.cust_profile1)
+        self.assertEqual(job.status, Job.STATUS_ASSIGNED)
+
+        # 5. Duplicate acceptance fails safely and doesn't create duplicate Job
+        post_res_dup = self.client.post(reverse('technician_accept_request', args=[repair_req.id]))
+        self.assertEqual(post_res_dup.status_code, 302)
+        self.assertEqual(Job.objects.filter(repair_request=repair_req).count(), 1)
+
+    def test_technician_reject_request_security(self):
+        # Setup repair request with tech1 selected
+        repair_req = RepairRequest.objects.create(
+            customer=self.cust_profile1,
+            service_category=self.cat_ac,
+            device_name='AC Unit 2',
+            problem_description='Not cooling at all',
+            location='MG Road',
+            city='Vijayawada',
+            preferred_date=timezone.now().date(),
+            urgency=RepairRequest.URGENCY_MEDIUM,
+            status=RepairRequest.STATUS_TECHNICIAN_SELECTED,
+            selected_technician=self.tech_profile1,
+        )
+        TechnicianMatch.objects.create(repair_request=repair_req, technician=self.tech_profile1, rank=1, match_score=90.0)
+
+        # 1. GET returns 405 Method Not Allowed
+        self.client.login(username='tech1', password='password123')
+        get_res = self.client.get(reverse('technician_reject_request', args=[repair_req.id]))
+        self.assertEqual(get_res.status_code, 405)
+
+        # 2. POST without CSRF returns 403 Forbidden with CSRF enforcement
+        csrf_client = Client(enforce_csrf_checks=True)
+        csrf_client.login(username='tech1', password='password123')
+        csrf_res = csrf_client.post(reverse('technician_reject_request', args=[repair_req.id]))
+        self.assertEqual(csrf_res.status_code, 403)
+
+        # 3. Unauthorized technician (tech2) gets 403 Forbidden
+        self.client.login(username='tech2', password='password123')
+        unauth_res = self.client.post(reverse('technician_reject_request', args=[repair_req.id]))
+        self.assertEqual(unauth_res.status_code, 403)
+
+        # 4. Authorized technician (tech1) POST succeeds
+        self.client.login(username='tech1', password='password123')
+        post_res = self.client.post(reverse('technician_reject_request', args=[repair_req.id]))
+        self.assertEqual(post_res.status_code, 302)
+
+        repair_req.refresh_from_db()
+        self.assertIsNone(repair_req.selected_technician)
+        self.assertEqual(repair_req.status, RepairRequest.STATUS_REJECTED)
+
+        # Verify rejection history was created
+        self.assertTrue(TechnicianRejection.objects.filter(repair_request=repair_req, technician=self.tech_profile1).exists())
+
+        # Verify TechnicianMatch for rejected technician was removed
+        self.assertFalse(TechnicianMatch.objects.filter(repair_request=repair_req, technician=self.tech_profile1).exists())
+
+    def test_customer_repair_cancel_security(self):
+        # Setup pending repair request owned by cust1
+        repair_req = RepairRequest.objects.create(
+            customer=self.cust_profile1,
+            service_category=self.cat_ac,
+            device_name='AC Unit 3',
+            problem_description='Strange noise',
+            location='MG Road',
+            city='Vijayawada',
+            preferred_date=timezone.now().date(),
+            urgency=RepairRequest.URGENCY_LOW,
+            status=RepairRequest.STATUS_PENDING,
+        )
+
+        # 1. GET returns 405 Method Not Allowed
+        self.client.login(username='cust1', password='password123')
+        get_res = self.client.get(reverse('customer_repair_cancel', args=[repair_req.id]))
+        self.assertEqual(get_res.status_code, 405)
+
+        # 2. POST without CSRF returns 403 Forbidden with CSRF enforcement
+        csrf_client = Client(enforce_csrf_checks=True)
+        csrf_client.login(username='cust1', password='password123')
+        csrf_res = csrf_client.post(reverse('customer_repair_cancel', args=[repair_req.id]))
+        self.assertEqual(csrf_res.status_code, 403)
+
+        # 3. Unauthorized customer (cust2) gets 403 Forbidden
+        self.client.login(username='cust2', password='password123')
+        unauth_res = self.client.post(reverse('customer_repair_cancel', args=[repair_req.id]))
+        self.assertEqual(unauth_res.status_code, 403)
+
+        # 4. Authorized customer (cust1) POST succeeds
+        self.client.login(username='cust1', password='password123')
+        post_res = self.client.post(reverse('customer_repair_cancel', args=[repair_req.id]))
+        self.assertEqual(post_res.status_code, 302)
+        repair_req.refresh_from_db()
+        self.assertEqual(repair_req.status, RepairRequest.STATUS_CANCELLED)
+
+        # 5. Cannot cancel a completed request
+        completed_req = RepairRequest.objects.create(
+            customer=self.cust_profile1,
+            service_category=self.cat_ac,
+            device_name='AC Unit 4',
+            problem_description='Completed job',
+            location='MG Road',
+            city='Vijayawada',
+            preferred_date=timezone.now().date(),
+            urgency=RepairRequest.URGENCY_LOW,
+            status=RepairRequest.STATUS_COMPLETED,
+        )
+        cancel_completed_res = self.client.post(reverse('customer_repair_cancel', args=[completed_req.id]))
+        self.assertEqual(cancel_completed_res.status_code, 302)
+        completed_req.refresh_from_db()
+        self.assertEqual(completed_req.status, RepairRequest.STATUS_COMPLETED)
+
+    def test_file_upload_security(self):
+        # 1. Create a helper valid JPEG
+        img_byte_arr = io.BytesIO()
+        image = Image.new('RGB', (20, 20), color='red')
+        image.save(img_byte_arr, format='JPEG')
+        valid_jpeg_bytes = img_byte_arr.getvalue()
+
+        valid_jpeg = SimpleUploadedFile("test.jpg", valid_jpeg_bytes, content_type="image/jpeg")
+        # Should not raise
+        validate_image_file(valid_jpeg)
+
+        # 2. Create a helper valid PNG
+        img_png_arr = io.BytesIO()
+        image_png = Image.new('RGB', (20, 20), color='blue')
+        image_png.save(img_png_arr, format='PNG')
+        valid_png_bytes = img_png_arr.getvalue()
+
+        valid_png = SimpleUploadedFile("test.png", valid_png_bytes, content_type="image/png")
+        validate_image_file(valid_png)
+
+        # 3. Dangerous extensions rejected
+        for bad_name in ["shell.html", "script.svg", "payload.exe", "virus.php", "code.js"]:
+            bad_file = SimpleUploadedFile(bad_name, b"some content", content_type="text/plain")
+            with self.assertRaises(ValidationError):
+                validate_image_file(bad_file)
+
+        # 4. Corrupt/fake image rejected even with .jpg extension
+        fake_jpg = SimpleUploadedFile("fake.jpg", b"<?php phpinfo(); ?>", content_type="image/jpeg")
+        with self.assertRaises(ValidationError):
+            validate_image_file(fake_jpg)
+
+        # 5. Oversized image rejected
+        oversized_bytes = b"X" * (MAX_UPLOAD_SIZE + 1024)
+        oversized_file = SimpleUploadedFile("huge.jpg", oversized_bytes, content_type="image/jpeg")
+        with self.assertRaises(ValidationError):
+            validate_image_file(oversized_file)
+
+        # 6. Valid PDF document
+        valid_pdf_bytes = b"%PDF-1.4\n1 0 obj\n<<>>\nendobj\ntrailer\n<<>>\n%%EOF"
+        valid_pdf = SimpleUploadedFile("doc.pdf", valid_pdf_bytes, content_type="application/pdf")
+        validate_document_file(valid_pdf)
+
+        # 7. Fake PDF (missing %PDF- header) rejected
+        fake_pdf = SimpleUploadedFile("fake.pdf", b"Not a real PDF", content_type="application/pdf")
+        with self.assertRaises(ValidationError):
+            validate_document_file(fake_pdf)
+
+        # 8. Dangerous extension on document validator rejected
+        bad_doc = SimpleUploadedFile("malware.exe", b"%PDF-fake", content_type="application/octet-stream")
+        with self.assertRaises(ValidationError):
+            validate_document_file(bad_doc)
+
+        # 9. RepairRequestForm rejects fake image
+        fake_img_upload = SimpleUploadedFile("fake.png", b"not an image data", content_type="image/png")
+        form = RepairRequestForm(
+            data={
+                'service_category': self.cat_ac.id,
+                'device_name': 'Test AC',
+                'problem_description': 'Test description for validation',
+                'location': 'Test Location',
+                'city': 'Vijayawada',
+                'urgency': RepairRequest.URGENCY_LOW,
+                'preferred_date': timezone.now().date(),
+            },
+            files={'problem_image': fake_img_upload}
+        )
+        self.assertFalse(form.is_valid())
+        self.assertIn('problem_image', form.errors)
+
 

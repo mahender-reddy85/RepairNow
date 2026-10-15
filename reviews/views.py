@@ -58,6 +58,8 @@ def submit_complaint(request, job_id=None):
     job = None
     if job_id:
         job = get_object_or_404(Job, id=job_id)
+        if not (request.user == job.customer.user or request.user == job.technician.user or request.user.is_admin_user):
+            return HttpResponseForbidden("You are not authorized to file a complaint for this repair job.")
 
     if request.method == 'POST':
         form = ComplaintForm(request.POST)

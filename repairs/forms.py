@@ -2,6 +2,7 @@ from django import forms
 from django.utils import timezone
 from .models import RepairRequest
 from services.models import ServiceCategory
+from accounts.validators import validate_image_file
 
 
 class RepairRequestForm(forms.ModelForm):
@@ -14,6 +15,12 @@ class RepairRequestForm(forms.ModelForm):
     preferred_date = forms.DateField(
         widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
         help_text="Select when you need the technician"
+    )
+
+    problem_image = forms.ImageField(
+        required=False,
+        validators=[validate_image_file],
+        widget=forms.FileInput(attrs={'class': 'form-control', 'accept': 'image/*'})
     )
 
     PREFERRED_TIME_CHOICES = [

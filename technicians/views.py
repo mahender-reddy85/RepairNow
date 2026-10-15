@@ -1,7 +1,9 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponseForbidden
+from django.views.decorators.http import require_POST
+from django.db import transaction
 from django.utils import timezone
 from django.db.models import Q
 from accounts.decorators import technician_required
@@ -172,40 +174,54 @@ def technician_request_detail(request, request_id):
 
 @login_required
 @technician_required
+@require_POST
 def technician_accept_request(request, request_id):
     profile = request.user.technician_profile
-    repair_request = get_object_or_404(RepairRequest, id=request_id, selected_technician=profile)
 
-    if repair_request.status != RepairRequest.STATUS_TECHNICIAN_SELECTED:
-        messages.warning(request, "This request is no longer available to accept.")
-        return redirect('technician_requests')
+    with transaction.atomic():
+        repair_request = get_object_or_404(
+            RepairRequest.objects.select_for_update(),
+            id=request_id
+        )
 
-    repair_request.status = RepairRequest.STATUS_ACCEPTED
-    repair_request.save(update_fields=['status', 'updated_at'])
+        if repair_request.selected_technician != profile:
+            return HttpResponseForbidden("You are not authorized to accept this repair request.")
 
-    job, created = Job.objects.get_or_create(
-        repair_request=repair_request,
-        defaults={
-            'technician': profile,
-            'customer': repair_request.customer,
-            'status': Job.STATUS_ACCEPTED,
-        }
-    )
+        if repair_request.status != RepairRequest.STATUS_TECHNICIAN_SELECTED:
+            messages.warning(request, "This request is no longer available to accept.")
+            return redirect('technician_requests')
 
-    JobStatusHistory.objects.create(
-        job=job,
-        status=Job.STATUS_ACCEPTED,
-        changed_by=request.user,
-        note=f"Technician {profile.full_name} accepted the repair request."
-    )
+        if hasattr(repair_request, 'job'):
+            messages.warning(request, "This request has already been accepted.")
+            return redirect('technician_job_detail', job_id=repair_request.job.id)
 
-    send_notification(
-        user=repair_request.customer.user,
-        title="Repair Request Accepted!",
-        message=f"{profile.full_name} has accepted your repair request for {repair_request.device_name}.",
-        link=f"/customer/repair/{repair_request.id}/track/",
-        notification_type="STATUS_UPDATE"
-    )
+        repair_request.status = RepairRequest.STATUS_ACCEPTED
+        repair_request.save(update_fields=['status', 'updated_at'])
+
+        job, created = Job.objects.get_or_create(
+            repair_request=repair_request,
+            defaults={
+                'technician': profile,
+                'customer': repair_request.customer,
+                'status': Job.STATUS_ACCEPTED,
+            }
+        )
+
+        if created:
+            JobStatusHistory.objects.create(
+                job=job,
+                status=Job.STATUS_ACCEPTED,
+                changed_by=request.user,
+                note=f"Technician {profile.full_name} accepted the repair request."
+            )
+
+        send_notification(
+            user=repair_request.customer.user,
+            title="Repair Request Accepted!",
+            message=f"{profile.full_name} has accepted your repair request for {repair_request.device_name}.",
+            link=f"/customer/repair/{repair_request.id}/track/",
+            notification_type="STATUS_UPDATE"
+        )
 
     messages.success(request, f"You have accepted request #{repair_request.id}. Job created!")
     return redirect('technician_job_detail', job_id=job.id)
@@ -213,32 +229,41 @@ def technician_accept_request(request, request_id):
 
 @login_required
 @technician_required
+@require_POST
 def technician_reject_request(request, request_id):
     profile = request.user.technician_profile
-    repair_request = get_object_or_404(RepairRequest, id=request_id, selected_technician=profile)
 
-    if repair_request.status != RepairRequest.STATUS_TECHNICIAN_SELECTED:
-        messages.warning(request, "This request cannot be rejected at this stage.")
-        return redirect('technician_requests')
+    with transaction.atomic():
+        repair_request = get_object_or_404(
+            RepairRequest.objects.select_for_update(),
+            id=request_id
+        )
 
-    repair_request.status = RepairRequest.STATUS_REJECTED
-    repair_request.selected_technician = None
-    repair_request.save(update_fields=['status', 'selected_technician', 'updated_at'])
+        if repair_request.selected_technician != profile:
+            return HttpResponseForbidden("You are not authorized to decline this repair request.")
 
-    TechnicianRejection.objects.get_or_create(
-        repair_request=repair_request,
-        technician=profile
-    )
+        if repair_request.status != RepairRequest.STATUS_TECHNICIAN_SELECTED:
+            messages.warning(request, "This request cannot be rejected at this stage.")
+            return redirect('technician_requests')
 
-    repair_request.matches.filter(technician=profile).delete()
+        repair_request.status = RepairRequest.STATUS_REJECTED
+        repair_request.selected_technician = None
+        repair_request.save(update_fields=['status', 'selected_technician', 'updated_at'])
 
-    send_notification(
-        user=repair_request.customer.user,
-        title="Technician Unavailable",
-        message=f"{profile.full_name} was unable to accept your request. Please select another technician.",
-        link=f"/customer/repair/{repair_request.id}/matches/",
-        notification_type="STATUS_UPDATE"
-    )
+        TechnicianRejection.objects.get_or_create(
+            repair_request=repair_request,
+            technician=profile
+        )
+
+        repair_request.matches.filter(technician=profile).delete()
+
+        send_notification(
+            user=repair_request.customer.user,
+            title="Technician Unavailable",
+            message=f"{profile.full_name} was unable to accept your request. Please select another technician.",
+            link=f"/customer/repair/{repair_request.id}/matches/",
+            notification_type="STATUS_UPDATE"
+        )
 
     messages.info(request, f"You rejected request #{repair_request.id}.")
     return redirect('technician_requests')

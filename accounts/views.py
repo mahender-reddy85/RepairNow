@@ -2,6 +2,7 @@ from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.utils.http import url_has_allowed_host_and_scheme
 from .forms import LoginForm, CustomerRegistrationForm, TechnicianRegistrationForm
 from notifications.models import send_notification
 
@@ -19,8 +20,8 @@ def custom_login(request):
                 if user.is_active:
                     login(request, user)
                     messages.success(request, f"Welcome back, {user.username}!")
-                    next_url = request.GET.get('next')
-                    if next_url:
+                    next_url = request.POST.get('next') or request.GET.get('next')
+                    if next_url and url_has_allowed_host_and_scheme(url=next_url, allowed_hosts={request.get_host()}):
                         return redirect(next_url)
                     return redirect('login_redirect')
                 else:

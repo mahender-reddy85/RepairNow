@@ -1,6 +1,7 @@
 from django import forms
 from django.contrib.auth import get_user_model
 from .models import CustomerProfile
+from .validators import validate_image_file, validate_document_file
 from technicians.models import TechnicianProfile, TechnicianSkill
 from services.models import ServiceCategory
 
@@ -89,7 +90,7 @@ class TechnicianRegistrationForm(forms.ModelForm):
     city = forms.CharField(initial='Vijayawada', widget=forms.TextInput(attrs={'class': 'form-control'}))
     state = forms.CharField(initial='Andhra Pradesh', widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'State'}))
     bio = forms.CharField(required=False, widget=forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Brief intro and experience summary'}))
-    profile_image = forms.ImageField(required=False, widget=forms.FileInput(attrs={'class': 'form-control profile-image-input', 'accept': 'image/*'}))
+    profile_image = forms.ImageField(required=False, validators=[validate_image_file], widget=forms.FileInput(attrs={'class': 'form-control profile-image-input', 'accept': 'image/*'}))
     
     skills = forms.ModelMultipleChoiceField(
         queryset=ServiceCategory.objects.filter(is_active=True),
@@ -99,7 +100,7 @@ class TechnicianRegistrationForm(forms.ModelForm):
 
     estimated_cost_min = forms.DecimalField(initial=300.0, widget=forms.NumberInput(attrs={'class': 'form-control'}))
     estimated_cost_max = forms.DecimalField(initial=800.0, widget=forms.NumberInput(attrs={'class': 'form-control'}))
-    verification_document = forms.FileField(required=False, widget=forms.FileInput(attrs={'class': 'form-control'}))
+    verification_document = forms.FileField(required=False, validators=[validate_document_file], widget=forms.FileInput(attrs={'class': 'form-control'}))
 
     class Meta:
         model = User
@@ -157,6 +158,12 @@ class TechnicianRegistrationForm(forms.ModelForm):
 
 
 class CustomerProfileUpdateForm(forms.ModelForm):
+    profile_image = forms.ImageField(
+        required=False,
+        validators=[validate_image_file],
+        widget=forms.FileInput(attrs={'class': 'form-control profile-image-input', 'accept': 'image/*'})
+    )
+
     class Meta:
         model = CustomerProfile
         fields = ['full_name', 'phone', 'address', 'city', 'state', 'postal_code', 'profile_image']
@@ -172,6 +179,16 @@ class CustomerProfileUpdateForm(forms.ModelForm):
 
 
 class TechnicianProfileUpdateForm(forms.ModelForm):
+    profile_image = forms.ImageField(
+        required=False,
+        validators=[validate_image_file],
+        widget=forms.FileInput(attrs={'class': 'form-control profile-image-input', 'accept': 'image/*'})
+    )
+    verification_document = forms.FileField(
+        required=False,
+        validators=[validate_document_file],
+        widget=forms.FileInput(attrs={'class': 'form-control'})
+    )
     skills = forms.ModelMultipleChoiceField(
         queryset=ServiceCategory.objects.filter(is_active=True),
         widget=forms.CheckboxSelectMultiple(),

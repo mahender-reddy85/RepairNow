@@ -1,6 +1,8 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_POST
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.db.models import Avg, Count
 from django.utils import timezone
 from accounts.decorators import admin_required
@@ -68,6 +70,7 @@ def admin_users(request):
 
 @login_required
 @admin_required
+@require_POST
 def admin_toggle_user_active(request, user_id):
     user = get_object_or_404(User, id=user_id)
     if user == request.user:
@@ -105,6 +108,7 @@ def admin_verifications(request):
 
 @login_required
 @admin_required
+@require_POST
 def admin_verify_technician(request, tech_id, action):
     tech = get_object_or_404(TechnicianProfile, id=tech_id)
     if action == 'approve':
@@ -133,8 +137,13 @@ def admin_verify_technician(request, tech_id, action):
         tech.verification_status = TechnicianProfile.VERIFICATION_SUSPENDED
         tech.save(update_fields=['verification_status'])
         messages.warning(request, f"Technician {tech.full_name} has been suspended.")
+    else:
+        messages.error(request, f"Invalid verification action '{action}'.")
         
-    return redirect(request.META.get('HTTP_REFERER', 'admin_technicians'))
+    referer = request.META.get('HTTP_REFERER')
+    if referer and url_has_allowed_host_and_scheme(url=referer, allowed_hosts={request.get_host()}):
+        return redirect(referer)
+    return redirect('admin_technicians')
 
 
 @login_required

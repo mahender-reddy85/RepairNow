@@ -84,19 +84,28 @@
               <td>
                 <div style="display: flex; gap: 0.35rem;">
                   {% if t.verification_status != 'VERIFIED' %}
-                    <a href="{% url 'admin_verify_technician' t.id 'approve' %}" class="btn btn-success btn-sm" title="Approve Verification">
-                      <i class="fa-solid fa-check"></i>
-                    </a>
+                    <form method="post" action="{% url 'admin_verify_technician' t.id 'approve' %}" style="display: inline;">
+                      {% csrf_token %}
+                      <button type="submit" class="btn btn-success btn-sm" title="Approve Verification">
+                        <i class="fa-solid fa-check"></i>
+                      </button>
+                    </form>
                   {% endif %}
                   {% if t.verification_status != 'REJECTED' and t.verification_status != 'SUSPENDED' %}
-                    <a href="{% url 'admin_verify_technician' t.id 'reject' %}" class="btn btn-danger btn-sm" title="Reject / Revoke" onclick="return confirm('Reject verification for {{ t.full_name }}?');">
-                      <i class="fa-solid fa-xmark"></i>
-                    </a>
+                    <form method="post" action="{% url 'admin_verify_technician' t.id 'reject' %}" style="display: inline;" onsubmit="return confirm('Reject verification for {{ t.full_name }}?');">
+                      {% csrf_token %}
+                      <button type="submit" class="btn btn-danger btn-sm" title="Reject / Revoke">
+                        <i class="fa-solid fa-xmark"></i>
+                      </button>
+                    </form>
                   {% endif %}
                   {% if t.verification_status != 'SUSPENDED' %}
-                    <a href="{% url 'admin_verify_technician' t.id 'suspend' %}" class="btn btn-warning btn-sm" title="Suspend" onclick="return confirm('Suspend {{ t.full_name }}?');">
-                      <i class="fa-solid fa-ban"></i>
-                    </a>
+                    <form method="post" action="{% url 'admin_verify_technician' t.id 'suspend' %}" style="display: inline;" onsubmit="return confirm('Suspend {{ t.full_name }}?');">
+                      {% csrf_token %}
+                      <button type="submit" class="btn btn-warning btn-sm" title="Suspend">
+                        <i class="fa-solid fa-ban"></i>
+                      </button>
+                    </form>
                   {% endif %}
                 </div>
               </td>

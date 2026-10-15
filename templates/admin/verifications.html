@@ -55,12 +55,18 @@
                 </td>
                 <td>
                   <div style="display: flex; gap: 0.5rem;">
-                    <a href="{% url 'admin_verify_technician' t.id 'approve' %}" class="btn btn-success btn-sm">
-                      <i class="fa-solid fa-check"></i> Approve
-                    </a>
-                    <a href="{% url 'admin_verify_technician' t.id 'reject' %}" class="btn btn-danger btn-sm" onclick="return confirm('Reject application from {{ t.full_name }}?');">
-                      <i class="fa-solid fa-xmark"></i> Reject
-                    </a>
+                    <form method="post" action="{% url 'admin_verify_technician' t.id 'approve' %}" style="display: inline;">
+                      {% csrf_token %}
+                      <button type="submit" class="btn btn-success btn-sm">
+                        <i class="fa-solid fa-check"></i> Approve
+                      </button>
+                    </form>
+                    <form method="post" action="{% url 'admin_verify_technician' t.id 'reject' %}" style="display: inline;" onsubmit="return confirm('Reject application from {{ t.full_name }}?');">
+                      {% csrf_token %}
+                      <button type="submit" class="btn btn-danger btn-sm">
+                        <i class="fa-solid fa-xmark"></i> Reject
+                      </button>
+                    </form>
                   </div>
                 </td>
               </tr>

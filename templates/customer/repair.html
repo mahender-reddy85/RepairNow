@@ -157,9 +157,12 @@
           {% endif %}
 
           {% if repair_request.can_be_cancelled %}
-            <a href="{% url 'customer_repair_cancel' repair_request.id %}" class="btn btn-danger" onclick="return confirm('Cancel this request?');">
-              <i class="fa-solid fa-ban"></i> Cancel Request
-            </a>
+            <form method="post" action="{% url 'customer_repair_cancel' repair_request.id %}" style="display: inline;" onsubmit="return confirm('Cancel this request?');">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-danger">
+                <i class="fa-solid fa-ban"></i> Cancel Request
+              </button>
+            </form>
           {% endif %}
         </div>
       </div>
