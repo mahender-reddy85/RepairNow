@@ -1,3 +1,4 @@
+from decimal import Decimal
 from django.db import models
 from django.conf import settings
 from django.core.exceptions import ValidationError
@@ -132,6 +133,9 @@ class Job(models.Model):
         STATUS_CANCELLED: [],
     }
 
+    MIN_FINAL_COST = Decimal('0.00')
+    MAX_FINAL_COST = Decimal('100000.00')
+
     repair_request = models.OneToOneField(RepairRequest, on_delete=models.CASCADE, related_name='job')
     technician = models.ForeignKey('technicians.TechnicianProfile', on_delete=models.CASCADE, related_name='jobs')
     customer = models.ForeignKey('accounts.CustomerProfile', on_delete=models.CASCADE, related_name='jobs')
@@ -150,9 +154,22 @@ class Job(models.Model):
     class Meta:
         ordering = ['-created_at']
 
+    def clean(self):
+        super().clean()
+        if self.final_cost is not None:
+            if self.final_cost < self.MIN_FINAL_COST:
+                raise ValidationError({'final_cost': f"Final cost cannot be negative. Minimum allowed is ₹{self.MIN_FINAL_COST}."})
+            if self.final_cost > self.MAX_FINAL_COST:
+                raise ValidationError({'final_cost': f"Final cost cannot exceed ₹{self.MAX_FINAL_COST:,.2f}."})
+
     def transition_to(self, new_status, user, note=""):
         if new_status not in self.ALLOWED_TRANSITIONS.get(self.status, []):
             raise ValidationError(f"Invalid transition from {self.status} to {new_status}")
+
+        if new_status == self.STATUS_COMPLETED:
+            if self.final_cost is None:
+                raise ValidationError("Final billable cost is required to complete the job.")
+            self.clean()
 
         self.status = new_status
         self.repair_request.status = new_status

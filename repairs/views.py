@@ -143,20 +143,72 @@ def customer_repair_matches(request, request_id):
     if repair_request.customer != profile and not request.user.is_admin_user:
         return HttpResponseForbidden("You do not have permission to view these matches.")
 
+    # Graceful parsing of optional location coordinates
+    lat_param = request.GET.get('latitude')
+    lon_param = request.GET.get('longitude')
+    parsed_lat = None
+    parsed_lon = None
+
+    if lat_param is not None and str(lat_param).strip() != '':
+        try:
+            val = float(lat_param)
+            if -90.0 <= val <= 90.0:
+                parsed_lat = val
+            else:
+                messages.warning(request, "Latitude must be between -90 and 90 degrees.")
+        except (ValueError, TypeError):
+            messages.warning(request, "Invalid latitude format. Coordinate must be numeric.")
+
+    if lon_param is not None and str(lon_param).strip() != '':
+        try:
+            val = float(lon_param)
+            if -180.0 <= val <= 180.0:
+                parsed_lon = val
+            else:
+                messages.warning(request, "Longitude must be between -180 and 180 degrees.")
+        except (ValueError, TypeError):
+            messages.warning(request, "Invalid longitude format. Coordinate must be numeric.")
+
+    if parsed_lat is not None and parsed_lon is not None:
+        if repair_request.latitude != parsed_lat or repair_request.longitude != parsed_lon:
+            repair_request.latitude = parsed_lat
+            repair_request.longitude = parsed_lon
+            repair_request.save(update_fields=['latitude', 'longitude'])
+            find_and_rank_technicians(repair_request)
+
     matches = repair_request.matches.select_related('technician').all().order_by('-match_score', 'distance')
     if not matches.exists():
         find_and_rank_technicians(repair_request)
         matches = repair_request.matches.select_related('technician').all().order_by('-match_score', 'distance')
 
+    # Graceful parsing of filter parameters
     min_rating = request.GET.get('rating')
     max_cost = request.GET.get('max_cost')
     avail_only = request.GET.get('available_only')
 
+    parsed_min_rating = None
+    if min_rating and str(min_rating).strip() != '':
+        try:
+            val = float(min_rating)
+            if 0.0 <= val <= 5.0:
+                parsed_min_rating = val
+        except (ValueError, TypeError):
+            parsed_min_rating = None
+
+    parsed_max_cost = None
+    if max_cost and str(max_cost).strip() != '':
+        try:
+            val = float(max_cost)
+            if val >= 0:
+                parsed_max_cost = val
+        except (ValueError, TypeError):
+            parsed_max_cost = None
+
     filtered_matches = []
     for m in matches:
-        if min_rating and m.technician.average_rating < float(min_rating):
+        if parsed_min_rating is not None and m.technician.average_rating < parsed_min_rating:
             continue
-        if max_cost and m.technician.estimated_cost_max > float(max_cost):
+        if parsed_max_cost is not None and m.technician.estimated_cost_max > parsed_max_cost:
             continue
         if avail_only and m.technician.availability_status != TechnicianProfile.AVAILABILITY_AVAILABLE:
             continue

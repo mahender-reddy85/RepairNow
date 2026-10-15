@@ -132,6 +132,13 @@ function initAlertAutoDismiss() {
   });
 }
 
+function getCsrfToken() {
+  const tokenInput = document.querySelector('[name=csrfmiddlewaretoken]');
+  if (tokenInput && tokenInput.value) return tokenInput.value;
+  const match = document.cookie.match(/csrftoken=([^;]+)/);
+  return match ? match[1] : '';
+}
+
 function initNotificationDismiss() {
   document.querySelectorAll('.mark-read-btn').forEach(btn => {
     btn.addEventListener('click', async (e) => {
@@ -139,9 +146,16 @@ function initNotificationDismiss() {
       const notifId = btn.dataset.notifId;
       if (!notifId) return;
 
+      const form = btn.closest('form');
+      const csrfToken = form?.querySelector('[name=csrfmiddlewaretoken]')?.value || getCsrfToken();
+
       try {
         const res = await fetch(`/notifications/${notifId}/mark-read/?ajax=1`, {
-          headers: { 'X-Requested-With': 'XMLHttpRequest' }
+          method: 'POST',
+          headers: {
+            'X-CSRFToken': csrfToken,
+            'X-Requested-With': 'XMLHttpRequest'
+          }
         });
         const data = await res.json();
         if (data.success) {
@@ -149,7 +163,11 @@ function initNotificationDismiss() {
           if (item) {
             item.classList.remove('unread');
             item.style.opacity = '0.6';
-            btn.remove();
+            if (form) {
+              form.remove();
+            } else {
+              btn.remove();
+            }
           }
           const badge = document.querySelector('.unread-count-badge');
           if (badge) {
@@ -173,7 +191,7 @@ function initAvailabilityToggle() {
   if (toggleSelect) {
     toggleSelect.addEventListener('change', async () => {
       const newStatus = toggleSelect.value;
-      const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+      const csrfToken = getCsrfToken();
 
       try {
         const formData = new FormData();

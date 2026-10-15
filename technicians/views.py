@@ -1,3 +1,4 @@
+from decimal import Decimal, InvalidOperation
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -299,47 +300,65 @@ def technician_job_detail(request, job_id):
 @technician_required
 def technician_update_job_status(request, job_id):
     profile = request.user.technician_profile
-    job = get_object_or_404(Job, id=job_id, technician=profile)
 
     if request.method == 'POST':
-        new_status = request.POST.get('status')
-        note = request.POST.get('notes', '').strip()
-        final_cost = request.POST.get('final_cost')
+        with transaction.atomic():
+            job = get_object_or_404(
+                Job.objects.select_for_update(),
+                id=job_id,
+                technician=profile
+            )
+            new_status = request.POST.get('status')
+            note = request.POST.get('notes', '').strip()
+            final_cost = request.POST.get('final_cost')
 
-        if new_status == Job.STATUS_COMPLETED:
-            if not final_cost:
-                messages.error(request, "Final billable cost is required to complete the job.")
-                return redirect('technician_job_detail', job_id=job.id)
+            if new_status == Job.STATUS_COMPLETED:
+                if final_cost is None or str(final_cost).strip() == '':
+                    messages.error(request, "Final billable cost is required to complete the job.")
+                    return redirect('technician_job_detail', job_id=job.id)
+                try:
+                    cost_decimal = Decimal(str(final_cost).strip())
+                except (InvalidOperation, TypeError, ValueError):
+                    messages.error(request, "Invalid final cost amount. Please enter a valid numeric amount.")
+                    return redirect('technician_job_detail', job_id=job.id)
+
+                if cost_decimal < Job.MIN_FINAL_COST:
+                    messages.error(request, f"Final cost cannot be negative. Minimum allowed is ₹{Job.MIN_FINAL_COST}.")
+                    return redirect('technician_job_detail', job_id=job.id)
+
+                if cost_decimal > Job.MAX_FINAL_COST:
+                    messages.error(request, f"Final cost exceeds maximum allowable limit of ₹{Job.MAX_FINAL_COST:,.2f}.")
+                    return redirect('technician_job_detail', job_id=job.id)
+
+                job.final_cost = cost_decimal
+
             try:
-                job.final_cost = float(final_cost)
-            except ValueError:
-                messages.error(request, "Invalid final cost amount.")
-                return redirect('technician_job_detail', job_id=job.id)
+                job.notes = note
+                job.transition_to(new_status, user=request.user, note=note)
 
-        try:
-            job.notes = note
-            job.transition_to(new_status, user=request.user, note=note)
+                status_labels = {
+                    Job.STATUS_ON_THE_WAY: ("Technician On The Way", f"{profile.full_name} is heading to your location."),
+                    Job.STATUS_ARRIVED: ("Technician Arrived", f"{profile.full_name} has arrived at your address."),
+                    Job.STATUS_IN_PROGRESS: ("Repair In Progress", f"{profile.full_name} has started inspecting/repairing."),
+                    Job.STATUS_COMPLETED: ("Repair Completed!", f"Your repair is complete. Final bill: ₹{job.final_cost}. Please leave a rating!"),
+                }
+                if new_status in status_labels:
+                    title, msg = status_labels[new_status]
+                    send_notification(
+                        user=job.customer.user,
+                        title=title,
+                        message=msg,
+                        link=f"/customer/repair/{job.repair_request.id}/track/",
+                        notification_type="STATUS_UPDATE"
+                    )
 
-            status_labels = {
-                Job.STATUS_ON_THE_WAY: ("Technician On The Way", f"{profile.full_name} is heading to your location."),
-                Job.STATUS_ARRIVED: ("Technician Arrived", f"{profile.full_name} has arrived at your address."),
-                Job.STATUS_IN_PROGRESS: ("Repair In Progress", f"{profile.full_name} has started inspecting/repairing."),
-                Job.STATUS_COMPLETED: ("Repair Completed!", f"Your repair is complete. Final bill: ₹{job.final_cost}. Please leave a rating!"),
-            }
-            if new_status in status_labels:
-                title, msg = status_labels[new_status]
-                send_notification(
-                    user=job.customer.user,
-                    title=title,
-                    message=msg,
-                    link=f"/customer/repair/{job.repair_request.id}/track/",
-                    notification_type="STATUS_UPDATE"
-                )
+                messages.success(request, f"Job status updated to {job.get_status_display()}.")
+            except Exception as e:
+                messages.error(request, f"Status update failed: {str(e)}")
 
-            messages.success(request, f"Job status updated to {job.get_status_display()}.")
-        except Exception as e:
-            messages.error(request, f"Status update failed: {str(e)}")
+        return redirect('technician_job_detail', job_id=job.id)
 
+    job = get_object_or_404(Job, id=job_id, technician=profile)
     return redirect('technician_job_detail', job_id=job.id)
 
 

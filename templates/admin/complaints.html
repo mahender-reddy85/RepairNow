@@ -54,7 +54,11 @@
                   </span>
                 </td>
                 <td>
-                  {{ c.admin_response|default:"<span style='color: var(--gray-400);'>None</span>"|safe }}
+                  {% if c.admin_response %}
+                    {{ c.admin_response }}
+                  {% else %}
+                    <span style="color: var(--gray-400);">None</span>
+                  {% endif %}
                 </td>
                 <td>{{ c.created_at|date:"M d, Y" }}</td>
                 <td>

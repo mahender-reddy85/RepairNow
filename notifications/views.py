@@ -1,10 +1,12 @@
 from django.shortcuts import get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_POST
 from django.http import JsonResponse
 from .models import Notification
 
 
 @login_required
+@require_POST
 def mark_notification_read(request, notif_id):
     notif = get_object_or_404(Notification, id=notif_id, user=request.user)
     notif.is_read = True
@@ -22,6 +24,7 @@ def mark_notification_read(request, notif_id):
 
 
 @login_required
+@require_POST
 def mark_all_notifications_read(request):
     request.user.notifications.filter(is_read=False).update(is_read=True)
     if request.headers.get('x-requested-with') == 'XMLHttpRequest':
@@ -32,12 +35,12 @@ def mark_all_notifications_read(request):
 
 
 @login_required
+@require_POST
 def delete_notification(request, notif_id):
     notif = get_object_or_404(Notification, id=notif_id, user=request.user)
-    if request.method == 'POST':
-        notif.delete()
-        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-            return JsonResponse({'success': True, 'id': notif_id})
+    notif.delete()
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        return JsonResponse({'success': True, 'id': notif_id})
     if request.user.is_customer:
         return redirect('customer_notifications')
     return redirect('technician_notifications')

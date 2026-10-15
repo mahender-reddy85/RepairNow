@@ -13,9 +13,12 @@
     <div style="display: flex; justify-content: space-between; align-items: center;">
       <h2>Notifications</h2>
       {% if notifications %}
-        <a href="{% url 'mark_all_notifications_read' %}" class="btn btn-secondary btn-sm">
-          <i class="fa-solid fa-check-double"></i> Mark All Read
-        </a>
+        <form method="post" action="{% url 'mark_all_notifications_read' %}" style="display: inline; margin: 0;">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-secondary btn-sm" style="cursor: pointer;">
+            <i class="fa-solid fa-check-double"></i> Mark All Read
+          </button>
+        </form>
       {% endif %}
     </div>
     <p style="margin: 0;">Stay informed about incoming customer bookings, verification updates, and reviews.</p>
@@ -42,9 +45,12 @@
                 <a href="{{ n.link }}" class="btn btn-primary btn-sm">View</a>
               {% endif %}
               {% if not n.is_read %}
-                <a href="#" data-notif-id="{{ n.id }}" class="mark-read-btn btn btn-secondary btn-sm" title="Mark Read">
-                  <i class="fa-solid fa-check"></i>
-                </a>
+                <form method="post" action="{% url 'mark_notification_read' n.id %}" style="display: inline; margin: 0;">
+                  {% csrf_token %}
+                  <button type="submit" data-notif-id="{{ n.id }}" class="mark-read-btn btn btn-secondary btn-sm" title="Mark Read" style="cursor: pointer;">
+                    <i class="fa-solid fa-check"></i>
+                  </button>
+                </form>
               {% endif %}
               <form method="post" action="{% url 'delete_notification' n.id %}" style="display: inline;">
                 {% csrf_token %}

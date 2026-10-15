@@ -2,7 +2,9 @@ import io
 from PIL import Image
 from pathlib import Path
 
-from django.test import TestCase, Client
+from decimal import Decimal
+from django.test import TestCase, Client, override_settings
+from django.conf import settings
 from django.urls import reverse
 from django.contrib.auth import get_user_model
 from django.utils import timezone
@@ -10,6 +12,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.exceptions import ValidationError
 from datetime import timedelta
 from accounts.models import CustomerProfile
+from accounts.forms import CustomerRegistrationForm
 from accounts.validators import validate_image_file, validate_document_file, MAX_UPLOAD_SIZE
 from services.models import ServiceCategory
 from technicians.models import TechnicianProfile, TechnicianSkill
@@ -18,6 +21,7 @@ from repairs.matching import haversine_distance, calculate_distance_score, calcu
 from repairs.forms import RepairRequestForm
 from reviews.models import Review, Complaint
 from notifications.models import Notification
+from django.core.cache import cache
 
 User = get_user_model()
 
@@ -146,7 +150,7 @@ class RepairNowTestSuite(TestCase):
         login_res = self.client.post(reverse('login'), {'username': 'cust1', 'password': 'password123'})
         self.assertEqual(login_res.status_code, 302)
 
-        logout_res = self.client.get(reverse('logout'))
+        logout_res = self.client.post(reverse('logout'))
         self.assertEqual(logout_res.status_code, 302)
 
         bad_login = self.client.post(reverse('login'), {'username': 'cust1', 'password': 'wrongpassword'})
@@ -241,7 +245,7 @@ class RepairNowTestSuite(TestCase):
         )
 
         self.client.login(username='tech1', password='password123')
-        accept_res = self.client.get(reverse('technician_accept_request', args=[req.id]))
+        accept_res = self.client.post(reverse('technician_accept_request', args=[req.id]))
         self.assertEqual(accept_res.status_code, 302)
 
         job = Job.objects.filter(repair_request=req).first()
@@ -398,7 +402,7 @@ class RepairNowTestSuite(TestCase):
         match = TechnicianMatch.objects.create(repair_request=req, technician=self.tech_profile1, match_score=95.0)
 
         self.client.login(username='tech1', password='password123')
-        reject_res = self.client.get(reverse('technician_reject_request', args=[req.id]))
+        reject_res = self.client.post(reverse('technician_reject_request', args=[req.id]))
         self.assertEqual(reject_res.status_code, 302)
 
         req.refresh_from_db()
@@ -679,7 +683,7 @@ class RepairNowTestSuite(TestCase):
             status=RepairRequest.STATUS_TECHNICIAN_SELECTED,
             selected_technician=self.tech_profile1,
         )
-        TechnicianMatch.objects.create(repair_request=repair_req, technician=self.tech_profile1, rank=1, match_score=95.0)
+        TechnicianMatch.objects.create(repair_request=repair_req, technician=self.tech_profile1, match_score=95.0)
 
         # 1. GET returns 405 Method Not Allowed
         self.client.login(username='tech1', password='password123')
@@ -702,13 +706,13 @@ class RepairNowTestSuite(TestCase):
         post_res = self.client.post(reverse('technician_accept_request', args=[repair_req.id]))
         self.assertEqual(post_res.status_code, 302)
         repair_req.refresh_from_db()
-        self.assertEqual(repair_req.status, RepairRequest.STATUS_IN_PROGRESS)
+        self.assertEqual(repair_req.status, RepairRequest.STATUS_ACCEPTED)
 
         job = Job.objects.filter(repair_request=repair_req).first()
         self.assertIsNotNone(job)
         self.assertEqual(job.technician, self.tech_profile1)
         self.assertEqual(job.customer, self.cust_profile1)
-        self.assertEqual(job.status, Job.STATUS_ASSIGNED)
+        self.assertEqual(job.status, Job.STATUS_ACCEPTED)
 
         # 5. Duplicate acceptance fails safely and doesn't create duplicate Job
         post_res_dup = self.client.post(reverse('technician_accept_request', args=[repair_req.id]))
@@ -729,7 +733,7 @@ class RepairNowTestSuite(TestCase):
             status=RepairRequest.STATUS_TECHNICIAN_SELECTED,
             selected_technician=self.tech_profile1,
         )
-        TechnicianMatch.objects.create(repair_request=repair_req, technician=self.tech_profile1, rank=1, match_score=90.0)
+        TechnicianMatch.objects.create(repair_request=repair_req, technician=self.tech_profile1, match_score=90.0)
 
         # 1. GET returns 405 Method Not Allowed
         self.client.login(username='tech1', password='password123')
@@ -884,5 +888,404 @@ class RepairNowTestSuite(TestCase):
         )
         self.assertFalse(form.is_valid())
         self.assertIn('problem_image', form.errors)
+
+    def test_admin_complaints_stored_xss_protection(self):
+        # 1. Create a complaint with script and img onerror payloads in subject, description, and admin_response
+        xss_payload = "<img src=x onerror=alert('xss-resp')><script>alert(1)</script>"
+        complaint = Complaint.objects.create(
+            user=self.cust_user1,
+            subject="Billing <script>alert('xss-subj')</script>",
+            description="Details <script>alert('xss-desc')</script>",
+            admin_response=xss_payload,
+            status=Complaint.STATUS_IN_REVIEW
+        )
+        empty_resp_complaint = Complaint.objects.create(
+            user=self.cust_user1,
+            subject="Empty response complaint",
+            description="No reply yet",
+            admin_response="",
+            status=Complaint.STATUS_OPEN
+        )
+
+        self.client.login(username='admin_test', password='password123')
+        res = self.client.get(reverse('admin_complaints'))
+        self.assertEqual(res.status_code, 200)
+
+        # 2. Verify malicious payload is escaped and not rendered unescaped as raw HTML
+        self.assertNotContains(res, xss_payload)
+        self.assertContains(res, "&lt;script&gt;alert(1)&lt;/script&gt;")
+        self.assertContains(res, "&lt;img src=x onerror=alert(&#x27;xss-resp&#x27;)&gt;")
+        self.assertContains(res, "&lt;script&gt;alert(&#x27;xss-desc&#x27;)&lt;/script&gt;")
+
+        # 3. Verify clean fallback rendering when admin_response is empty
+        self.assertContains(res, '<span style="color: var(--gray-400);">None</span>')
+
+    def test_secure_logout(self):
+        self.client.login(username='cust1', password='password123')
+
+        # 1. GET logout returns 405 Method Not Allowed
+        get_res = self.client.get(reverse('logout'))
+        self.assertEqual(get_res.status_code, 405)
+
+        # 2. POST without CSRF returns 403 Forbidden with CSRF enforcement
+        csrf_client = Client(enforce_csrf_checks=True)
+        csrf_client.login(username='cust1', password='password123')
+        csrf_res = csrf_client.post(reverse('logout'))
+        self.assertEqual(csrf_res.status_code, 403)
+
+        # 3. Valid POST logs user out successfully
+        post_res = self.client.post(reverse('logout'))
+        self.assertEqual(post_res.status_code, 302)
+        self.assertRedirects(post_res, reverse('home'))
+
+        # Verify session is cleared and user is no longer authenticated
+        self.assertNotIn('_auth_user_id', self.client.session)
+        dash_res = self.client.get(reverse('customer_dashboard'))
+        self.assertEqual(dash_res.status_code, 302)
+
+    def test_secure_notification_state_changes(self):
+        n1 = Notification.objects.create(
+            user=self.cust_user1,
+            title='Cust1 Notif',
+            message='Message 1',
+            is_read=False
+        )
+        n2 = Notification.objects.create(
+            user=self.cust_user2,
+            title='Cust2 Notif',
+            message='Message 2',
+            is_read=False
+        )
+
+        self.client.login(username='cust1', password='password123')
+
+        # 1. GET mark_notification_read returns 405 Method Not Allowed
+        get_res = self.client.get(reverse('mark_notification_read', args=[n1.id]))
+        self.assertEqual(get_res.status_code, 405)
+
+        # 2. GET mark_all_notifications_read returns 405 Method Not Allowed
+        get_all_res = self.client.get(reverse('mark_all_notifications_read'))
+        self.assertEqual(get_all_res.status_code, 405)
+
+        # 3. POST without CSRF returns 403 with CSRF enforcement
+        csrf_client = Client(enforce_csrf_checks=True)
+        csrf_client.login(username='cust1', password='password123')
+        csrf_res = csrf_client.post(reverse('mark_notification_read', args=[n1.id]))
+        self.assertEqual(csrf_res.status_code, 403)
+
+        # 4. Valid POST marks user's own notification as read
+        post_res = self.client.post(reverse('mark_notification_read', args=[n1.id]))
+        self.assertEqual(post_res.status_code, 302)
+        n1.refresh_from_db()
+        self.assertTrue(n1.is_read)
+
+        # 5. User cannot modify another user's notification (404 Not Found)
+        other_user_res = self.client.post(reverse('mark_notification_read', args=[n2.id]))
+        self.assertEqual(other_user_res.status_code, 404)
+        n2.refresh_from_db()
+        self.assertFalse(n2.is_read)
+
+        # 6. Mark all only marks current user's notifications
+        n3 = Notification.objects.create(
+            user=self.cust_user1,
+            title='Cust1 Notif 2',
+            message='Message 3',
+            is_read=False
+        )
+        mark_all_res = self.client.post(reverse('mark_all_notifications_read'))
+        self.assertEqual(mark_all_res.status_code, 302)
+        n3.refresh_from_db()
+        n2.refresh_from_db()
+        self.assertTrue(n3.is_read)
+        self.assertFalse(n2.is_read)
+
+        # 7. AJAX POST works cleanly and returns JSON response
+        n4 = Notification.objects.create(
+            user=self.cust_user1,
+            title='Cust1 Notif 3',
+            message='Message 4',
+            is_read=False
+        )
+        ajax_res = self.client.post(
+            reverse('mark_notification_read', args=[n4.id]),
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest'
+        )
+        self.assertEqual(ajax_res.status_code, 200)
+        self.assertEqual(ajax_res.json(), {'success': True, 'id': n4.id})
+        n4.refresh_from_db()
+        self.assertTrue(n4.is_read)
+
+    def test_password_validation_and_rate_limiting(self):
+        # 1. Weak passwords rejected in CustomerRegistrationForm
+        # Short password (< 8 characters)
+        form_short = CustomerRegistrationForm(data={
+            'username': 'testshort',
+            'email': 'short@test.com',
+            'phone': '9876543210',
+            'full_name': 'Test Short',
+            'address': 'Street 1',
+            'city': 'Vijayawada',
+            'password': 'short',
+            'confirm_password': 'short',
+        })
+        self.assertFalse(form_short.is_valid())
+        self.assertIn('password', form_short.errors)
+
+        # Numeric password
+        form_num = CustomerRegistrationForm(data={
+            'username': 'testnum',
+            'email': 'num@test.com',
+            'phone': '9876543210',
+            'full_name': 'Test Num',
+            'address': 'Street 1',
+            'city': 'Vijayawada',
+            'password': '12345678',
+            'confirm_password': '12345678',
+        })
+        self.assertFalse(form_num.is_valid())
+        self.assertIn('password', form_num.errors)
+
+        # Common password
+        form_com = CustomerRegistrationForm(data={
+            'username': 'testcom',
+            'email': 'com@test.com',
+            'phone': '9876543210',
+            'full_name': 'Test Com',
+            'address': 'Street 1',
+            'city': 'Vijayawada',
+            'password': 'password',
+            'confirm_password': 'password',
+        })
+        self.assertFalse(form_com.is_valid())
+        self.assertIn('password', form_com.errors)
+
+        # Strong password accepted
+        form_strong = CustomerRegistrationForm(data={
+            'username': 'teststrong',
+            'email': 'strong@test.com',
+            'phone': '9876543210',
+            'full_name': 'Test Strong',
+            'address': 'Street 1',
+            'city': 'Vijayawada',
+            'state': 'Andhra Pradesh',
+            'password': 'StrongPass#2026!',
+            'confirm_password': 'StrongPass#2026!',
+        })
+        self.assertTrue(form_strong.is_valid(), form_strong.errors)
+
+        # 2. Login rate limiting
+        cache.clear()
+
+        # 4 consecutive bad attempts do not lock out yet
+        for i in range(4):
+            bad_attempt = self.client.post(reverse('login'), {
+                'username': 'cust1',
+                'password': f'wrongpass{i}'
+            })
+            self.assertEqual(bad_attempt.status_code, 200)
+            self.assertContains(bad_attempt, "Invalid username or password.")
+
+        # 5th bad attempt triggers rate limit lockout
+        lockout_attempt = self.client.post(reverse('login'), {
+            'username': 'cust1',
+            'password': 'wrongpass5'
+        })
+        self.assertEqual(lockout_attempt.status_code, 200)
+        self.assertContains(lockout_attempt, "Too many failed login attempts. Please try again later.")
+
+        # 6th attempt with correct credentials while locked out is still blocked
+        blocked_attempt = self.client.post(reverse('login'), {
+            'username': 'cust1',
+            'password': 'password123'
+        })
+        self.assertEqual(blocked_attempt.status_code, 200)
+        self.assertContains(blocked_attempt, "Too many failed login attempts. Please try again later.")
+
+        # Clearing cache resets lockout
+        cache.clear()
+
+        # Successful login works and clears failed attempts
+        good_login = self.client.post(reverse('login'), {
+            'username': 'cust1',
+            'password': 'password123'
+        })
+        self.assertEqual(good_login.status_code, 302)
+
+    def test_malformed_coordinates_and_filters_handling(self):
+        req = RepairRequest.objects.create(
+            customer=self.cust_profile1,
+            service_category=self.cat_ac,
+            device_name='AC For Coordinate Test',
+            problem_description='Testing coordinates and filters',
+            location='MG Road',
+            city='Vijayawada',
+            preferred_date=timezone.now().date(),
+            urgency=RepairRequest.URGENCY_LOW,
+            status=RepairRequest.STATUS_PENDING,
+        )
+
+        self.client.login(username='cust1', password='password123')
+        base_url = reverse('customer_repair_matches', args=[req.id])
+
+        # 1. Missing latitude/longitude (standard request)
+        res_missing = self.client.get(base_url)
+        self.assertEqual(res_missing.status_code, 200)
+
+        # 2. Valid latitude/longitude
+        res_valid = self.client.get(f"{base_url}?latitude=16.5033&longitude=80.6465")
+        self.assertEqual(res_valid.status_code, 200)
+        req.refresh_from_db()
+        self.assertAlmostEqual(req.latitude, 16.5033)
+        self.assertAlmostEqual(req.longitude, 80.6465)
+
+        # 3. Non-numeric latitude does not cause HTTP 500
+        res_bad_lat = self.client.get(f"{base_url}?latitude=abc&longitude=80.6465")
+        self.assertEqual(res_bad_lat.status_code, 200)
+        self.assertContains(res_bad_lat, "Invalid latitude format")
+
+        # 4. Non-numeric longitude does not cause HTTP 500
+        res_bad_lon = self.client.get(f"{base_url}?latitude=16.5033&longitude=xyz")
+        self.assertEqual(res_bad_lon.status_code, 200)
+        self.assertContains(res_bad_lon, "Invalid longitude format")
+
+        # 5. Empty latitude does not cause HTTP 500
+        res_empty_lat = self.client.get(f"{base_url}?latitude=&longitude=80.6465")
+        self.assertEqual(res_empty_lat.status_code, 200)
+
+        # 6. Empty longitude does not cause HTTP 500
+        res_empty_lon = self.client.get(f"{base_url}?latitude=16.5033&longitude=")
+        self.assertEqual(res_empty_lon.status_code, 200)
+
+        # 7. Latitude outside [-90, 90] does not cause HTTP 500 and is rejected
+        res_lat_out = self.client.get(f"{base_url}?latitude=95.5&longitude=80.6465")
+        self.assertEqual(res_lat_out.status_code, 200)
+        self.assertContains(res_lat_out, "Latitude must be between -90 and 90 degrees")
+
+        # 8. Longitude outside [-180, 180] does not cause HTTP 500 and is rejected
+        res_lon_out = self.client.get(f"{base_url}?latitude=16.5033&longitude=-185.0")
+        self.assertEqual(res_lon_out.status_code, 200)
+        self.assertContains(res_lon_out, "Longitude must be between -180 and 180 degrees")
+
+        # 9. Non-numeric rating and max_cost do not cause HTTP 500
+        res_bad_filters = self.client.get(f"{base_url}?rating=not-a-number&max_cost=invalid-cost")
+        self.assertEqual(res_bad_filters.status_code, 200)
+
+    def test_final_repair_cost_validation(self):
+        req = RepairRequest.objects.create(
+            customer=self.cust_profile1,
+            service_category=self.cat_ac,
+            device_name='AC Unit For Cost Validation',
+            problem_description='Gas charging',
+            location='MG Road',
+            city='Vijayawada',
+            preferred_date=timezone.now().date(),
+            urgency=RepairRequest.URGENCY_MEDIUM,
+            status=RepairRequest.STATUS_IN_PROGRESS,
+            selected_technician=self.tech_profile1,
+        )
+        job = Job.objects.create(
+            repair_request=req,
+            technician=self.tech_profile1,
+            customer=self.cust_profile1,
+            status=Job.STATUS_IN_PROGRESS
+        )
+
+        self.client.login(username='tech1', password='password123')
+        update_url = reverse('technician_update_job_status', args=[job.id])
+
+        # 1. Missing final_cost rejected
+        res_missing = self.client.post(update_url, {'status': Job.STATUS_COMPLETED, 'final_cost': ''})
+        self.assertEqual(res_missing.status_code, 302)
+        job.refresh_from_db()
+        self.assertEqual(job.status, Job.STATUS_IN_PROGRESS)
+
+        # 2. Non-numeric final_cost rejected
+        res_nan = self.client.post(update_url, {'status': Job.STATUS_COMPLETED, 'final_cost': 'not-numeric'})
+        self.assertEqual(res_nan.status_code, 302)
+        job.refresh_from_db()
+        self.assertEqual(job.status, Job.STATUS_IN_PROGRESS)
+
+        # 3. Negative cost rejected
+        res_neg = self.client.post(update_url, {'status': Job.STATUS_COMPLETED, 'final_cost': '-150.00'})
+        self.assertEqual(res_neg.status_code, 302)
+        job.refresh_from_db()
+        self.assertEqual(job.status, Job.STATUS_IN_PROGRESS)
+
+        # 4. Extremely large cost rejected
+        res_huge = self.client.post(update_url, {'status': Job.STATUS_COMPLETED, 'final_cost': '5000000.00'})
+        self.assertEqual(res_huge.status_code, 302)
+        job.refresh_from_db()
+        self.assertEqual(job.status, Job.STATUS_IN_PROGRESS)
+
+        # 5. Zero cost accepted (e.g. warranty/free adjustment)
+        res_zero = self.client.post(update_url, {'status': Job.STATUS_COMPLETED, 'final_cost': '0.00'})
+        self.assertEqual(res_zero.status_code, 302)
+        job.refresh_from_db()
+        self.assertEqual(job.status, Job.STATUS_COMPLETED)
+        self.assertEqual(job.final_cost, Decimal('0.00'))
+
+        # 6. Valid positive final cost accepted on a new job
+        req2 = RepairRequest.objects.create(
+            customer=self.cust_profile1,
+            service_category=self.cat_ac,
+            device_name='AC Unit 2',
+            problem_description='Filter clean',
+            location='MG Road',
+            city='Vijayawada',
+            preferred_date=timezone.now().date(),
+            urgency=RepairRequest.URGENCY_MEDIUM,
+            status=RepairRequest.STATUS_IN_PROGRESS,
+            selected_technician=self.tech_profile1,
+        )
+        job2 = Job.objects.create(
+            repair_request=req2,
+            technician=self.tech_profile1,
+            customer=self.cust_profile1,
+            status=Job.STATUS_IN_PROGRESS
+        )
+        update_url2 = reverse('technician_update_job_status', args=[job2.id])
+        res_valid = self.client.post(update_url2, {'status': Job.STATUS_COMPLETED, 'final_cost': '750.00'})
+        self.assertEqual(res_valid.status_code, 302)
+        job2.refresh_from_db()
+        self.assertEqual(job2.status, Job.STATUS_COMPLETED)
+        self.assertEqual(job2.final_cost, Decimal('750.00'))
+
+        # 7. Model clean() validation
+        job2.final_cost = Decimal('-1.00')
+        with self.assertRaises(ValidationError):
+            job2.clean()
+
+        job2.final_cost = Decimal('100001.00')
+        with self.assertRaises(ValidationError):
+            job2.clean()
+
+        job2.final_cost = Decimal('500.00')
+        job2.clean()  # should not raise
+
+    def test_production_configuration_and_security_headers(self):
+        # 1. Standard security headers emitted by responses
+        res = self.client.get(reverse('home'))
+        self.assertEqual(res.headers.get('X-Content-Type-Options'), 'nosniff')
+        self.assertEqual(res.headers.get('X-Frame-Options'), 'DENY')
+        self.assertEqual(res.headers.get('Referrer-Policy'), 'same-origin')
+
+        # 2. Host header validation when DEBUG=False
+        with override_settings(DEBUG=False, ALLOWED_HOSTS=['example.com', 'testserver']):
+            client = Client()
+            # Allowed host works
+            good_res = client.get(reverse('home'), HTTP_HOST='example.com')
+            self.assertEqual(good_res.status_code, 200)
+
+            # Disallowed host returns 400 Bad Request
+            bad_res = client.get(reverse('home'), HTTP_HOST='attacker.com')
+            self.assertEqual(bad_res.status_code, 400)
+
+        # 3. Verify security settings attributes exist on settings
+        self.assertTrue(hasattr(settings, 'SESSION_COOKIE_SECURE'))
+        self.assertTrue(hasattr(settings, 'CSRF_COOKIE_SECURE'))
+        self.assertTrue(hasattr(settings, 'SECURE_SSL_REDIRECT'))
+        self.assertTrue(hasattr(settings, 'SECURE_HSTS_SECONDS'))
+        self.assertTrue(hasattr(settings, 'SECURE_HSTS_INCLUDE_SUBDOMAINS'))
+        self.assertTrue(hasattr(settings, 'SECURE_HSTS_PRELOAD'))
 
 

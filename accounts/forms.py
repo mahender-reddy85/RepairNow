@@ -1,5 +1,7 @@
 from django import forms
 from django.contrib.auth import get_user_model
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError as DjangoValidationError
 from .models import CustomerProfile
 from .validators import validate_image_file, validate_document_file
 from technicians.models import TechnicianProfile, TechnicianSkill
@@ -18,12 +20,12 @@ class LoginForm(forms.Form):
 
 class CustomerRegistrationForm(forms.ModelForm):
     password = forms.CharField(
-        widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Create password (min 6 characters)'}),
-        min_length=6
+        widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Create password (min 8 characters)'}),
+        min_length=8
     )
     confirm_password = forms.CharField(
         widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Re-enter password'}),
-        min_length=6
+        min_length=8
     )
     full_name = forms.CharField(widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Full Name'}))
     phone = forms.CharField(widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Mobile Number (e.g. 9876543210)'}))
@@ -52,6 +54,15 @@ class CustomerRegistrationForm(forms.ModelForm):
         p2 = cleaned_data.get('confirm_password')
         if p1 and p2 and p1 != p2:
             self.add_error('confirm_password', "Passwords do not match.")
+        elif p1:
+            try:
+                user = User(
+                    username=cleaned_data.get('username', ''),
+                    email=cleaned_data.get('email', '')
+                )
+                validate_password(p1, user=user)
+            except DjangoValidationError as error:
+                self.add_error('password', error)
         return cleaned_data
 
     def save(self, commit=True):
@@ -75,12 +86,12 @@ class CustomerRegistrationForm(forms.ModelForm):
 
 class TechnicianRegistrationForm(forms.ModelForm):
     password = forms.CharField(
-        widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Create password (min 6 characters)'}),
-        min_length=6
+        widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Create password (min 8 characters)'}),
+        min_length=8
     )
     confirm_password = forms.CharField(
         widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Re-enter password'}),
-        min_length=6
+        min_length=8
     )
     full_name = forms.CharField(widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Full Name'}))
     phone = forms.CharField(widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Mobile Number'}))
@@ -122,6 +133,15 @@ class TechnicianRegistrationForm(forms.ModelForm):
         p2 = cleaned_data.get('confirm_password')
         if p1 and p2 and p1 != p2:
             self.add_error('confirm_password', "Passwords do not match.")
+        elif p1:
+            try:
+                user = User(
+                    username=cleaned_data.get('username', ''),
+                    email=cleaned_data.get('email', '')
+                )
+                validate_password(p1, user=user)
+            except DjangoValidationError as error:
+                self.add_error('password', error)
 
         c_min = cleaned_data.get('estimated_cost_min')
         c_max = cleaned_data.get('estimated_cost_max')
